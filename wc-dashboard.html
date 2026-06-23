@@ -27,20 +27,43 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 .phase-title{font-size:20px;font-weight:800;letter-spacing:-.01em}
 .phase-sub{font-size:12px;color:#666;margin-top:3px}
 .live-count{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#22c55e}
-.live-dot{width:8px;height:8px;background:#22c55e;border-radius:50%;animation:pulse 1.4s ease-in-out infinite}
+
+/* Live dot (reused in multiple places) */
+.live-dot{display:inline-block;width:8px;height:8px;background:#22c55e;border-radius:50%;flex-shrink:0;animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 
-/* Match cards */
+/* ── Hero live card ──────────────────────────────────────────────────── */
+.hero-card{
+    background:linear-gradient(135deg,rgba(34,197,94,.07),rgba(34,197,94,.03));
+    border:1px solid rgba(34,197,94,.45);
+    border-radius:16px;
+    padding:22px 20px 18px;
+    margin-bottom:8px;
+    box-shadow:0 0 32px rgba(34,197,94,.08);
+}
+.hero-badge{display:flex;align-items:center;gap:7px;margin-bottom:16px}
+.hero-live-pill{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#22c55e;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:20px;padding:3px 10px}
+.hero-context{font-size:11px;color:#666;letter-spacing:.02em}
+.hero-teams{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.hero-team{flex:1;display:flex;align-items:center;gap:11px;min-width:0}
+.hero-team.away{justify-content:flex-end;text-align:right}
+.hero-crest{flex-shrink:0;width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border-radius:10px;overflow:hidden}
+.hero-crest img{width:52px;height:52px;object-fit:contain;display:block}
+.hero-crest .crest-tla{font-size:11px;font-weight:700;color:#444}
+.hero-name{font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
+.hero-center{flex-shrink:0;text-align:center;min-width:100px}
+.hero-score{font-size:44px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:-.04em;line-height:1}
+.hero-score-sep{color:#222;font-weight:300;font-size:36px}
+.hero-status{font-size:12px;font-weight:700;color:#22c55e;margin-top:5px;letter-spacing:.04em}
+.hero-status.ht{color:#f59e0b}
+.hero-blurb{font-size:12px;color:#888;line-height:1.65;padding-top:16px;border-top:1px solid rgba(34,197,94,.12);margin-top:16px;font-style:italic}
+
+/* ── Regular match cards ─────────────────────────────────────────────── */
 .match-card{background:#151515;border:1px solid #1e1e1e;border-radius:12px;padding:14px 16px;margin-bottom:4px;display:flex;align-items:center;gap:10px;transition:border-color .15s}
 .match-card:hover{border-color:#2a2a2a}
-.match-card.live-card{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.04)}
 .match-card.finished-card{opacity:.9}
-
-/* Home team: crest left, name right */
 .match-team{flex:1;display:flex;align-items:center;gap:9px;min-width:0}
-/* Away team: name left, crest right — flags align on the outer edge */
 .match-team.away{justify-content:flex-end;text-align:right}
-
 .crest-wrap{flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#1e1e1e;border-radius:6px;overflow:hidden}
 .crest-wrap img{display:block;object-fit:contain}
 .crest-tla{font-size:8px;font-weight:700;color:#444;letter-spacing:.04em}
@@ -48,19 +71,14 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 .team-name-txt.winner{color:#f0f0f0;font-weight:700}
 .team-name-txt.loser{color:#444}
 .team-tbd{font-size:12px;color:#444;font-style:italic}
-
 .match-center{flex-shrink:0;text-align:center;min-width:90px}
 .score-nums{font-size:24px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:8px;line-height:1;letter-spacing:-.02em}
 .score-sep{color:#333;font-weight:300;font-size:20px}
 .score-vs{font-size:13px;color:#333;font-weight:400}
 .match-status{font-size:11px;font-weight:600;margin-top:4px}
 .st-ft{color:#444}
-.st-live{color:#22c55e}
-.st-ht{color:#f59e0b}
 .st-soon{color:#f0f0f0}
 .match-meta{font-size:10px;color:#555;margin-top:2px;letter-spacing:.02em}
-
-/* Blurb below each match */
 .match-blurb{font-size:11px;color:#666;line-height:1.55;padding:5px 6px 12px;font-style:italic}
 
 .day-header{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.08em;padding:5px 0 8px;margin-top:20px;border-bottom:1px solid #1a1a1a;margin-bottom:10px}
@@ -91,7 +109,6 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
             <div class="skel" style="height:14px;width:120px"></div></div>
         </div>
     </div>
-
     <div id="live-section"></div>
     <div id="today-section">
         <div class="section-label">Matches</div>
@@ -103,7 +120,7 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 </main>
 
 <script>
-// ── Stage constants ───────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 const STAGE_LABEL = {
     GROUP_STAGE:'Group Stage', LAST_32:'Round of 32', LAST_16:'Round of 16',
     QUARTER_FINALS:'Quarterfinals', SEMI_FINALS:'Semifinals',
@@ -114,7 +131,86 @@ const LIVE_ST  = new Set(['LIVE','IN_PLAY','PAUSED']);
 const DONE_ST  = new Set(['FINISHED','AWARDED']);
 const SCHED_ST = new Set(['TIMED','SCHEDULED']);
 
-// ── Cache ────────────────────────────────────────────────────────────────────
+// ── Player spotlights (one sentence per team, used in live blurbs) ────────────
+const SPOTLIGHT = {
+    'Argentina':        'Lautaro Martínez carries the goal threat for Argentina with clinical movement and a deadly finish.',
+    'Australia':        'Mathew Ryan is exceptional in goal; Australia\'s best chance of causing an upset rests on his saves.',
+    'Belgium':          'Kevin De Bruyne is Belgium\'s creative engine — his range of passing and game-reading are world-class.',
+    'Bolivia':          'Marcelo Martins is Bolivia\'s most experienced threat; look for them to be compact and dangerous on the counter.',
+    'Bosnia-Herzegovina':'Ermedin Demirović leads a physical Bosnia attack that will test any defence with his strength and direct running.',
+    'Brazil':           'Vinicius Jr. on the left wing is one of the most electrifying players in world football when in full flow.',
+    'Canada':           'Alphonso Davies\' explosive pace and overlapping runs down the left are almost impossible to contain.',
+    'Cape Verde':       'Garry Rodrigues is Cape Verde\'s talisman — an unpredictable winger capable of moments of individual brilliance.',
+    'Chile':            'Alexis Sánchez still carries Chile\'s attacking threat; his experience and directness can unlock tight defences.',
+    'Colombia':         'James Rodríguez and Luis Díaz give Colombia two completely different but equally dangerous attacking outlets.',
+    'Congo DR':         'Silas is Congo DR\'s key creative player — tricky, direct, and a constant nuisance for opposing full-backs.',
+    'Costa Rica':       'Keylor Navas in goal remains one of the best shot-stoppers in world football, even at this stage of his career.',
+    'Croatia':          'Luka Modrić still pulls every string for Croatia — his vision, touch, and ability to control tempo are unrivalled.',
+    'Cuba':             'Cuba will be well-organised and hard to break down; their best results come from disciplined defending and rapid transitions.',
+    'Curacao':          'Leandro Bacuna brings Premier League-level quality to Curaçao\'s midfield — a tireless runner with a good range of passing.',
+    'Czechia':          'Patrik Schick is the Czech Republic\'s focal point — a technically excellent centre-forward with a habit for big goals.',
+    'Ecuador':          'Moisés Caicedo has established himself as one of Europe\'s elite defensive midfielders — his interceptions and intensity define Ecuador.',
+    'Egypt':            'Mohamed Salah is, simply, one of the best players on the planet. If he\'s at his best, Egypt can beat anyone.',
+    'El Salvador':      'El Salvador will be tight, physical, and dangerous from set pieces — a banana-skin opponent for any big nation.',
+    'England':          'Jude Bellingham\'s ability to arrive late into the box and Harry Kane\'s finishing give England two match-winning threats in every game.',
+    'France':           'Kylian Mbappé at full speed is the most frightening sight in international football — France\'s attack runs through him.',
+    'Germany':          'Florian Wirtz is a generational talent — his ability to receive under pressure, turn, and drive at defenders is extraordinary.',
+    'Ghana':            'Mohammed Kudus has been outstanding in Europe this season; if Ghana are to cause an upset, he\'ll be the one to ignite it.',
+    'Greece':           'Vangelis Pavlidis leads the Greek attack with power and movement — a constant aerial threat from set pieces.',
+    'Haiti':            'Duckens Nazon gives Haiti a physical, direct outlet and can hold the ball up to bring teammates into play.',
+    'Honduras':         'Alberth Elis brings pace and directness on the flanks; Honduras are dangerous when they can play on the break.',
+    'Hungary':          'Dominik Szoboszlai drives Hungary\'s attack from midfield with energy, vision, and a powerful long-range shot.',
+    'Indonesia':        'Indonesia will be energetic and organised; they\'ll look to hit on the counter with pace from wide areas.',
+    'Iran':             'Sardar Azmoun is a natural target man who brings teammates into play and leads Iran\'s line with intelligence.',
+    'Iraq':             'Aymen Hussein is Iraq\'s most reliable scorer — composed in front of goal and a real danger from set plays.',
+    'Italy':            'Federico Chiesa\'s electric pace and dribbling make him Italy\'s most unpredictable and exciting attacking threat.',
+    "Ivory Coast":      'Sébastien Haller\'s strength, movement, and clinical finishing make him one of Africa\'s most dangerous strikers.',
+    'Jamaica':          'Michail Antonio brings raw pace and physicality to Jamaica\'s attack; his ability to hold up play is crucial.',
+    'Japan':            'Takumi Minamino and Kaoru Mitoma give Japan a relentless pressing duo — their work rate off the ball is as important as their quality on it.',
+    'Jordan':           'Yazan Al Naimat is Jordan\'s creative spark — a technically gifted attacker who thrives in tight spaces.',
+    'Kenya':            'Michael Olunga is Kenya\'s most reliable scorer with vast international experience at the highest level.',
+    'Korea Republic':   'Son Heung-min\'s explosive pace, finishing, and left foot make him a danger every single time he gets on the ball.',
+    'Mali':             'Yves Bissouma controls the tempo from the centre of midfield — his physicality and passing range are key for Mali.',
+    'Mexico':           'Santiago Giménez has been in lethal club form; if Mexico are to go deep, he will be central to everything they do.',
+    'Morocco':          'Achraf Hakimi combines blistering pace with elite technical quality — one of the best attacking full-backs in world football.',
+    'Netherlands':      'Cody Gakpo\'s runs in behind and Virgil van Dijk\'s composure at the back give the Dutch a solid base from both ends.',
+    'New Zealand':      'The All Whites will be organised and hard to break down, relying on set-piece delivery and disciplined shape.',
+    'Nigeria':          'Victor Osimhen is the most feared striker in Africa — his explosive movement and finishing can embarrass any defence.',
+    'Norway':           'Erling Haaland\'s goal-scoring record is simply historic; Norway\'s best chance of success runs entirely through him.',
+    'Panama':           'Ismael Díaz provides Panama\'s best creative outlet — a tricky, pacy winger who can create from nothing.',
+    'Paraguay':         'Miguel Almirón\'s relentless running, pressing, and ability to find space between the lines make him a nightmare for defenders.',
+    'Peru':             'André Carrillo\'s experience and wide play are essential for Peru — a tireless winger who sets the tone with his work rate.',
+    'Poland':           'Robert Lewandowski remains world-class — his movement, heading, and clinical left foot make him lethal inside the box.',
+    'Portugal':         'Bruno Fernandes drives Portugal\'s attack with creativity and pressing intensity; watch his late runs into the penalty area.',
+    'Qatar':            'Almoez Ali is Qatar\'s most reliable scorer and focal point — strong in the air and dangerous with both feet.',
+    'Romania':          'Razvan Marin controls Romania\'s midfield with excellent passing range and the ability to score from distance.',
+    'Saudi Arabia':     'Salem Al-Dawsari shocked Argentina in 2022 with a stunning strike and has only grown in confidence and quality since.',
+    'Scotland':         'Andy Robertson\'s relentless energy and delivery from left-back set the tone for Scotland\'s high-pressing game.',
+    'Senegal':          'Sadio Mané\'s pace, strength, and eye for goal make him one of Africa\'s greatest ever players — still a huge threat.',
+    'Serbia':           'Aleksandar Mitrović is physically imposing and deadly in the air — Serbia\'s best ball into the box will always find him.',
+    'Slovakia':         'Milan Škriniar anchors Slovakia\'s defence with composure and reads the game as well as any defender at this level.',
+    'Slovenia':         'Benjamin Šeško is a generational talent — a powerful, tall striker with pace and a devastating finish.',
+    'South Africa':     'Percy Tau is Bafana Bafana\'s most creative player — quick, technically gifted, and capable of moments of real inspiration.',
+    'Spain':            'Lamine Yamal at just 18 is already the most exciting young player in world football; Pedri controls the midfield with elegance.',
+    'Sweden':           'Viktor Gyökeres arrives as one of Europe\'s most in-form strikers — his movement, hold-up play, and finishing are elite.',
+    'Switzerland':      'Granit Xhaka\'s experience and Xherdan Shaqiri\'s creativity give Switzerland a midfield that punches well above its weight.',
+    'Trinidad and Tobago': 'Kevin Molino\'s pace and directness on the wing give Trinidad and Tobago a live wire who can unlock any defence.',
+    'Tunisia':          'Youssef Msakni is Tunisia\'s creative heartbeat; their best results come from organised defending and his moments of magic.',
+    'Turkey':           'Hakan Çalhanoğlu controls tempo from deep with exceptional passing range — all of Turkey\'s best football flows through him.',
+    'Ukraine':          'Mykhailo Mudryk\'s electric pace and dribbling make him one of the most exciting wide players in the tournament.',
+    'United States':    'Christian Pulisic is the best American player in a generation — his directness, creativity, and big-game temperament are world-class.',
+    'Uruguay':          'Darwin Núñez\'s explosive pace up front combined with Federico Valverde\'s engine from midfield make Uruguay a serious threat.',
+    'Uzbekistan':       'Eldor Shomurodov is Uzbekistan\'s talisman — a powerful striker capable of holding up play and finishing against any defence.',
+    'Venezuela':        'Yeferson Soteldo\'s low centre of gravity and quick feet make him almost impossible to dispossess in tight spaces.',
+};
+
+function getSpotlight(team) {
+    if (!team?.name) return null;
+    // Try exact name, then shortName
+    return SPOTLIGHT[team.name] || SPOTLIGHT[team.shortName] || null;
+}
+
+// ── Cache ─────────────────────────────────────────────────────────────────────
 function cacheGet(k){try{const r=JSON.parse(localStorage.getItem(k)||'null');return r&&Date.now()-r.ts<r.ttl?r.data:null}catch{return null}}
 function cacheSet(k,d,ttl){try{localStorage.setItem(k,JSON.stringify({data:d,ts:Date.now(),ttl}))}catch{}}
 async function loadJson(file,key,ttl=120000){
@@ -126,57 +222,35 @@ async function loadJson(file,key,ttl=120000){
 const getMatches   = ()=>loadJson('matches.json','wc_matches',120000);
 const getStandings = ()=>loadJson('standings.json','wc_standings',120000);
 
-// ── Crest helper ─────────────────────────────────────────────────────────────
+// ── Crest helpers ─────────────────────────────────────────────────────────────
 function crest(team, sz=34){
-    const url = team?.crest, tla = team?.tla||'?';
-    if(!url) return `<div class="crest-wrap" style="width:${sz}px;height:${sz}px"><span class="crest-tla">${tla}</span></div>`;
-    return `<div class="crest-wrap" style="width:${sz}px;height:${sz}px">
-        <img src="${url}" width="${sz}" height="${sz}" alt="${tla}" onerror="this.style.display='none'">
-    </div>`;
+    const url=team?.crest, tla=team?.tla||'?';
+    if(!url)return`<div class="crest-wrap" style="width:${sz}px;height:${sz}px"><span class="crest-tla">${tla}</span></div>`;
+    return`<div class="crest-wrap" style="width:${sz}px;height:${sz}px"><img src="${url}" width="${sz}" height="${sz}" alt="${tla}" onerror="this.style.display='none'"></div>`;
+}
+function heroCrest(team){
+    const url=team?.crest, tla=team?.tla||'?';
+    return`<div class="hero-crest">${url?`<img src="${url}" width="52" height="52" alt="${tla}" onerror="this.style.display='none'">`:`<span class="crest-tla">${tla}</span>`}</div>`;
 }
 
-// ── Date helpers ─────────────────────────────────────────────────────────────
+// ── Date helpers ──────────────────────────────────────────────────────────────
 function localDay(utc){const d=new Date(utc);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function todayDay(){return localDay(new Date().toISOString())}
 function fmtDay(utc){return new Date(utc).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
 function fmtTime(utc){return new Date(utc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
 
-// ── Match status ─────────────────────────────────────────────────────────────
+// ── Match status helpers ──────────────────────────────────────────────────────
 function matchSt(m){
     const s=m.score?.fullTime;
     if(DONE_ST.has(m.status))  return{h:s?.home??'-',a:s?.away??'-',label:'FT',cls:'st-ft',live:false};
-    if(m.status==='LIVE')      return{h:s?.home??0, a:s?.away??0, label:'● LIVE',cls:'st-live',live:true};
-    if(m.status==='PAUSED')    return{h:s?.home??0, a:s?.away??0, label:'HT',cls:'st-ht',live:true};
+    if(m.status==='LIVE')      return{h:s?.home??0,  a:s?.away??0,  label:'● LIVE',cls:'st-live',live:true};
+    if(m.status==='PAUSED')    return{h:s?.home??0,  a:s?.away??0,  label:'HT',cls:'st-ht',live:true};
     return{h:null,a:null,label:fmtTime(m.utcDate),cls:'st-soon',live:false};
 }
 function winClass(m,side){
     if(!DONE_ST.has(m.status))return'';
     const w=m.score?.winner;if(!w||w==='DRAW')return'';
     return((side==='home'&&w==='HOME_TEAM')||(side==='away'&&w==='AWAY_TEAM'))?'winner':'loser';
-}
-
-// ── Match card HTML ───────────────────────────────────────────────────────────
-// blurb is an optional string to show beneath the card
-function matchCard(m, blurb){
-    const{h,a,label,cls,live}=matchSt(m);
-    const ht=m.homeTeam, at=m.awayTeam;
-    // Guard: API returns {name:null,...} for undetermined knockout slots
-    const htName=ht?.name?`<span class="team-name-txt ${winClass(m,'home')}">${ht.shortName||ht.name}</span>`:`<span class="team-tbd">TBD</span>`;
-    const atName=at?.name?`<span class="team-name-txt ${winClass(m,'away')}">${at.shortName||at.name}</span>`:`<span class="team-tbd">TBD</span>`;
-    const scoreHtml=h!==null?`<span>${h}</span><span class="score-sep">–</span><span>${a}</span>`:`<span class="score-vs">vs</span>`;
-    const grp=m.group?`Grp ${m.group.replace('GROUP_','')} · `:'';
-    const lbl=STAGE_LABEL[m.stage]||m.stage;
-    const md=m.matchday?` MD${m.matchday}`:'';
-    const blurbHtml=blurb?`<div class="match-blurb">${blurb}</div>`:'';
-    return`<div class="match-card ${live?'live-card':''} ${DONE_ST.has(m.status)?'finished-card':''}">
-        <div class="match-team">${crest(ht)}${htName}</div>
-        <div class="match-center">
-            <div class="score-nums">${scoreHtml}</div>
-            <div class="match-status ${cls}">${label}</div>
-            <div class="match-meta">${grp}${lbl}${md}</div>
-        </div>
-        <div class="match-team away">${atName}${crest(at)}</div>
-    </div>${blurbHtml}`;
 }
 
 // ── Phase detection ───────────────────────────────────────────────────────────
@@ -192,11 +266,10 @@ function detectMatchday(matches,stage){
     return played.length?Math.max(...played):1;
 }
 
-// ── Match blurb (computed from standings) ────────────────────────────────────
-function computeBlurb(match, standingsArr){
+// ── Blurb: stakes from standings ──────────────────────────────────────────────
+function computeStakes(match, standingsArr){
     if(match.stage!=='GROUP_STAGE')return'';
     if(!match.homeTeam?.name||!match.awayTeam?.name)return'';
-    // Standings use "Group A" format; matches use "GROUP_A"
     const grpLabel=match.group?.replace('GROUP_','Group ');
     const grp=(standingsArr||[]).find(s=>s.group===grpLabel);
     if(!grp)return'';
@@ -207,50 +280,117 @@ function computeBlurb(match, standingsArr){
     const hn=match.homeTeam.shortName||match.homeTeam.name;
     const an=match.awayTeam.shortName||match.awayTeam.name;
     const hp=htRow.points, ap=atRow.points;
-    const hpos=htRow.position, apos=atRow.position;
     const md=match.matchday||1;
-    const grpLetter=grpLabel?.replace('Group ','');
+    const grpLetter=(grpLabel||'').replace('Group ','');
 
-    // Already finished — report the result
     if(DONE_ST.has(match.status)){
         const w=match.score?.winner;
         const winner=w==='HOME_TEAM'?hn:w==='AWAY_TEAM'?an:null;
-        if(!winner)return`Full time — a draw in Group ${grpLetter}.`;
-        return`${winner} take three points in Group ${grpLetter}.`;
+        return winner?`${winner} took all three points in Group ${grpLetter}.`:`The sides shared the points in Group ${grpLetter}.`;
     }
-
-    if(md===1){
-        return`Opening game in Group ${grpLetter}. Both sides looking to get off to a strong start — a win here sets the tone for the group stage.`;
-    }
-
+    if(md===1) return`Opening game in Group ${grpLetter} — both sides looking to get off to a winning start. The mood and momentum from this game can shape the rest of the group.`;
     if(md===2){
-        if(hp===3&&ap===3) return`Both ${hn} and ${an} won their openers and come in level on points. Whoever wins leads Group ${grpLetter} heading into the final matchday.`;
-        if(hp===3&&ap===0) return`${hn} come in off a win while ${an} lost their opener. A second defeat could effectively end ${an}'s World Cup before the final matchday.`;
-        if(hp===0&&ap===3) return`${an} are flying after a big opening win; ${hn} are under the cosh after a defeat. ${hn} cannot afford to lose again.`;
-        if(hp===1&&ap===1) return`Both sides drew their openers. A win here moves either team into serious contention — a draw keeps things very tight heading into matchday 3.`;
-        if(hp===3&&ap===1) return`${hn} come in with maximum points while ${an} drew their opener. A win for ${an} would set up a fascinating final matchday.`;
-        if(hp===1&&ap===3) return`${an} lead with a win while ${hn} drew their opener. ${hn} need a result here to keep their qualification hopes in their own hands.`;
-        if(hp===0&&ap===0) return`Both teams lost their openers — this is already a must-win situation. The loser here is all but eliminated from the group stage.`;
-        if(hp===0&&ap===1) return`${hn} are in trouble after matchday 1. Only a win will do for ${hn}; ${an} just need to avoid losing to stay safe.`;
-        if(hp===1&&ap===0) return`${an} are in trouble after matchday 1. Only a win will do for ${an}; ${hn} just need to avoid losing to stay safe.`;
+        if(hp===3&&ap===3) return`Both ${hn} and ${an} won their openers and come in level on three points. The winner all but leads Group ${grpLetter} into the final matchday.`;
+        if(hp===3&&ap===0) return`${hn} arrive in form after a matchday-one win; ${an} are already under pressure after a defeat. A second loss here would put ${an}'s World Cup in serious jeopardy.`;
+        if(hp===0&&ap===3) return`${an} are flying after a matchday-one win while ${hn} are in desperate need of a response after their opening defeat. A loss here could end ${hn}'s hopes.`;
+        if(hp===1&&ap===1) return`Both sides drew their openers and come into this evenly matched. Whoever takes three points here moves into a very strong position heading into matchday three.`;
+        if(hp===3&&ap===1) return`${hn} lead the group after a matchday-one win; ${an} drew their opener and know a defeat today leaves them needing a result on the final matchday.`;
+        if(hp===1&&ap===3) return`${an} come in top of the group; ${hn} drew their opener and need a win here to keep qualification in their own hands.`;
+        if(hp===0&&ap===0) return`Both teams lost their openers — this is already a must-win situation. The loser will almost certainly be heading home after the group stage.`;
+        if(hp===0&&ap===1) return`${hn} are in deep trouble after losing on matchday one. Only a win will do for ${hn}; ${an} just need to avoid defeat to stay comfortable.`;
+        if(hp===1&&ap===0) return`${an} are in deep trouble after losing on matchday one. Only a win will do for ${an}; ${hn} just need to avoid defeat to stay comfortable.`;
     }
-
     if(md===3){
-        if(hp>=6) return`${hn} are already through to the knockout stage. They may rest key players for the Round of 32 — ${an} will be hoping to catch them on the back foot.`;
-        if(ap>=6) return`${an} are already through to the knockout stage. They may rotate their squad — ${hn} will look to take advantage.`;
-        if(hp>=4&&ap>=4) return`Both sides can seal their spot with a draw. A tense, potentially tactical affair in Group ${grpLetter}.`;
-        if(hp>=4&&ap<=1) return`${hn} need only a draw to advance. ${an} need a win — and results elsewhere to go their way — to have any hope.`;
-        if(hp<=1&&ap>=4) return`${an} need only a draw to advance. ${hn} need a win — and results elsewhere to go their way — to have any hope.`;
-        if(hp>=4) return`${hn} need only a draw to guarantee their place in the Round of 32. A draw might suit ${an} too — but only if other results go their way.`;
-        if(ap>=4) return`${an} need only a draw to guarantee their place in the Round of 32. A draw might suit ${hn} too — but only if other results go their way.`;
-        if(hp===3&&ap===3) return`Everything to play for in Group ${grpLetter}. Both ${hn} and ${an} need a win to be sure of advancing, though a draw could still be enough depending on the other game.`;
-        if(hp===3&&ap===0) return`${hn} have it in their own hands while ${an} are all but eliminated. ${an} need a win, a big swing in goal difference, and other results to go their way.`;
-        if(hp===0&&ap===3) return`${an} have it in their own hands while ${hn} are all but eliminated. ${hn} need a win, a big swing in goal difference, and other results to go their way.`;
-        if(hp===0&&ap===0) return`Neither ${hn} nor ${an} have a point so far. The winner here can still make a case for being one of the best third-place teams — both need maximum points.`;
-        return`Final matchday in Group ${grpLetter}. ${hn} (${hp} pts) vs ${an} (${ap} pts) — both sides know exactly what they need.`;
+        if(hp>=6) return`${hn} are already through to the knockout stage. They may rotate the squad here — ${an} will look to take advantage of any drop in intensity.`;
+        if(ap>=6) return`${an} are already through to the knockout stage. They may rotate the squad here — ${hn} will look to take advantage of any drop in intensity.`;
+        if(hp>=4&&ap>=4) return`Both sides can advance with a draw in this final group game. Expect a tense, tactical battle where neither side wants to take risks.`;
+        if(hp>=4) return`${hn} need only a point to seal their place in the knockout round. ${an} must attack to have any chance — which could open space for ${hn} on the break.`;
+        if(ap>=4) return`${an} need only a point to advance. ${hn} must attack and win, which could open space for ${an} to counter.`;
+        if(hp===3&&ap===3) return`Perfectly balanced on the final matchday — both ${hn} and ${an} need a win to feel safe, though a draw and the right result elsewhere could still see both through.`;
+        if(hp===0&&ap===0) return`Neither side has a point — both need a win and a swing in goal difference just to have a chance. Expect a wide-open, high-risk contest.`;
+        return`Final matchday in Group ${grpLetter}. ${hn} (${hp} pts) and ${an} (${ap} pts) both know exactly what they need to do.`;
     }
-
     return'';
+}
+
+// ── Short blurb (for regular cards) ──────────────────────────────────────────
+function computeBlurb(match, standingsArr){
+    return computeStakes(match, standingsArr);
+}
+
+// ── Long blurb (for live hero cards) ─────────────────────────────────────────
+function computeLiveBlurb(match, standingsArr){
+    const stakes = computeStakes(match, standingsArr);
+    const hs = getSpotlight(match.homeTeam);
+    const as_ = getSpotlight(match.awayTeam);
+    const parts = [];
+    if(stakes) parts.push(stakes);
+    if(hs)  parts.push(hs);
+    if(as_) parts.push(as_);
+    return parts.join(' ');
+}
+
+// ── Hero live card ────────────────────────────────────────────────────────────
+function liveHeroCard(m, standingsArr){
+    const s=m.score?.fullTime;
+    const h = m.status==='PAUSED' ? (s?.home??0) : (s?.home??0);
+    const a = m.status==='PAUSED' ? (s?.away??0) : (s?.away??0);
+    const statusLabel = m.status==='PAUSED' ? 'Half Time' : '● Live';
+    const statusCls = m.status==='PAUSED' ? 'ht' : '';
+    const grp=m.group?`Group ${m.group.replace('GROUP_','')} · `:'';
+    const lbl=STAGE_LABEL[m.stage]||m.stage;
+    const md=m.matchday?` · Matchday ${m.matchday}`:'';
+    const hn=m.homeTeam?.name?m.homeTeam.shortName||m.homeTeam.name:'TBD';
+    const an=m.awayTeam?.name?m.awayTeam.shortName||m.awayTeam.name:'TBD';
+    const blurb=computeLiveBlurb(m, standingsArr);
+
+    return`<div class="hero-card">
+        <div class="hero-badge">
+            <div class="hero-live-pill"><span class="live-dot" style="width:6px;height:6px"></span>Live Now</div>
+            <span class="hero-context">${grp}${lbl}${md}</span>
+        </div>
+        <div class="hero-teams">
+            <div class="hero-team">
+                ${heroCrest(m.homeTeam)}
+                <span class="hero-name">${hn}</span>
+            </div>
+            <div class="hero-center">
+                <div class="hero-score">
+                    <span>${h}</span>
+                    <span class="hero-score-sep">–</span>
+                    <span>${a}</span>
+                </div>
+                <div class="hero-status ${statusCls}">${statusLabel}</div>
+            </div>
+            <div class="hero-team away">
+                <span class="hero-name">${an}</span>
+                ${heroCrest(m.awayTeam)}
+            </div>
+        </div>
+        ${blurb?`<div class="hero-blurb">${blurb}</div>`:''}
+    </div>`;
+}
+
+// ── Regular match card ────────────────────────────────────────────────────────
+function matchCard(m, blurb){
+    const{h,a,label,cls}=matchSt(m);
+    const ht=m.homeTeam, at=m.awayTeam;
+    const htName=ht?.name?`<span class="team-name-txt ${winClass(m,'home')}">${ht.shortName||ht.name}</span>`:`<span class="team-tbd">TBD</span>`;
+    const atName=at?.name?`<span class="team-name-txt ${winClass(m,'away')}">${at.shortName||at.name}</span>`:`<span class="team-tbd">TBD</span>`;
+    const scoreHtml=h!==null?`<span>${h}</span><span class="score-sep">–</span><span>${a}</span>`:`<span class="score-vs">vs</span>`;
+    const grp=m.group?`Grp ${m.group.replace('GROUP_','')} · `:'';
+    const lbl=STAGE_LABEL[m.stage]||m.stage;
+    const md=m.matchday?` MD${m.matchday}`:'';
+    const blurbHtml=blurb?`<div class="match-blurb">${blurb}</div>`:'';
+    return`<div class="match-card ${DONE_ST.has(m.status)?'finished-card':''}">
+        <div class="match-team">${crest(ht)}${htName}</div>
+        <div class="match-center">
+            <div class="score-nums">${scoreHtml}</div>
+            <div class="match-status ${cls}">${label}</div>
+            <div class="match-meta">${grp}${lbl}${md}</div>
+        </div>
+        <div class="match-team away">${atName}${crest(at)}</div>
+    </div>${blurbHtml}`;
 }
 
 // ── Render: phase banner ──────────────────────────────────────────────────────
@@ -283,11 +423,12 @@ function renderMatches(matches, standingsArr){
     const live=matches.filter(m=>LIVE_ST.has(m.status));
     const todayMs=matches.filter(m=>localDay(m.utcDate)===today);
 
-    // Live section
+    // Live section — hero cards
     if(live.length){
         document.getElementById('live-section').innerHTML=
-            `<div class="section-label" style="color:#22c55e;margin-bottom:10px"><span class="live-dot" style="display:inline-block;margin-right:5px"></span>Live Now</div>`+
-            live.map(m=>matchCard(m, computeBlurb(m, standingsArr))).join('')+`<div style="height:20px"></div>`;
+            `<div class="section-label" style="color:#22c55e;margin-bottom:12px">Live Now</div>`+
+            live.map(m=>liveHeroCard(m, standingsArr)).join('')+
+            `<div style="height:24px"></div>`;
     } else {
         document.getElementById('live-section').innerHTML='';
     }
@@ -338,7 +479,6 @@ async function init(){
     try{
         const[md,sd]=await Promise.all([getMatches(),getStandings()]);
         const matches=md.matches||[];
-        // Standings: filter to TOTAL entries for group lookup
         const standingsArr=(sd.standings||[]).filter(s=>s.type==='TOTAL');
         renderPhase(matches);
         renderMatches(matches, standingsArr);
@@ -349,7 +489,6 @@ async function init(){
             :`Updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
     }catch(e){
         const msg=e.message?.includes('404')?'Data not yet available — workflow may still be running.':
-                  e.message?.includes('401')?'Invalid API key.':
                   `Error loading data: ${e.message}`;
         ['phase-section','today-section'].forEach(id=>{
             document.getElementById(id).innerHTML=`<div class="error-msg">${msg}</div>`;
