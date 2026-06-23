@@ -2,9 +2,7 @@ name: Update World Cup Data
 
 on:
   schedule:
-    - cron: '*/5 12-23 * * *'  # Every 5 min, noon–midnight UTC
-    - cron: '*/5 0-3 * * *'   # Every 5 min, midnight–3am UTC
-    - cron: '0 4-11 * * *'    # Hourly overnight (no matches)
+    - cron: '*/5 * * * *'  # Every 5 min all day; script exits early outside match windows
   workflow_dispatch:
 
 permissions:

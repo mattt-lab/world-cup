@@ -5,9 +5,10 @@ fetch_data.py — Fetch 2026 World Cup data.
 Writes:
   data/matches.json   — all competition matches (football-data.org)
   data/standings.json — group stage standings (football-data.org)
-  data/live.json      — live scores (ESPN unofficial scoreboard API, no key)
+  data/live.json      — live scores (ESPN unofficial scoreboard, no key)
 
-Run every 5 minutes via GitHub Actions during the tournament.
+Runs every 5 minutes via GitHub Actions. Exits early when no match is
+active or imminent, saving ~80% of API calls across the tournament.
 """
 
 import json
@@ -23,6 +24,53 @@ UA      = "WCDashboard/1.0 (+https://github.com/mattt-lab/world-cup)"
 ESPN_URL = (
     "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard"
 )
+
+# Minutes before kickoff to start fetching, and after kickoff to keep fetching.
+# 140 covers 90 min match + 15 min HT + ~35 min extra time / rain delay buffer.
+PRE_MATCH_MIN  = 10
+POST_MATCH_MIN = 140
+
+
+def in_match_window():
+    """
+    Read the existing data/matches.json (no API call) and return True if
+    any match is live or within the fetch window around its kickoff time.
+    Returns True if the file is missing/unreadable (forces initial seed fetch),
+    and also if the data is more than 24 hours old.
+    """
+    try:
+        with open("data/matches.json", encoding="utf-8") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("  No existing data/matches.json — fetching to seed.")
+        return True
+
+    # Force a refresh if data is stale (e.g. after a long CI outage)
+    updated_str = data.get("_meta", {}).get("updated", "")
+    if updated_str:
+        try:
+            last_updated = datetime.fromisoformat(updated_str.replace("Z", "+00:00"))
+            age_h = (datetime.now(timezone.utc) - last_updated).total_seconds() / 3600
+            if age_h > 24:
+                print(f"  Data is {age_h:.0f}h old — fetching regardless.")
+                return True
+        except ValueError:
+            pass
+
+    now = datetime.now(timezone.utc)
+    for m in data.get("matches", []):
+        # Already marked live by the API
+        if m.get("status") in ("LIVE", "IN_PLAY", "PAUSED"):
+            return True
+        try:
+            kickoff = datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00"))
+        except (KeyError, ValueError):
+            continue
+        elapsed_min = (now - kickoff).total_seconds() / 60
+        if -PRE_MATCH_MIN <= elapsed_min <= POST_MATCH_MIN:
+            return True
+
+    return False
 
 
 def fetch(path):
@@ -51,9 +99,7 @@ def fetch_espn():
 
 def parse_espn(data):
     """
-    Return a dict keyed by 'HOME_TLA:AWAY_TLA' with live score info.
-    Covers all match states (pre / in / post) so the dashboard can
-    cross-reference for clock display even on finished matches.
+    Return a dict keyed by 'HOME_TLA:AWAY_TLA' with live score + clock info.
     """
     if not data:
         return {}
@@ -73,18 +119,16 @@ def parse_espn(data):
         if not (home_tla and away_tla):
             continue
 
-        status     = event.get("status", {})
-        st_type    = status.get("type", {})
-        state      = st_type.get("state", "")        # "pre" | "in" | "post"
-        detail     = st_type.get("shortDetail", "")  # e.g. "2nd Half, 67:00" or "FT"
+        status  = event.get("status", {})
+        st_type = status.get("type", {})
 
         out[f"{home_tla}:{away_tla}"] = {
             "homeScore": int(home.get("score") or 0),
             "awayScore": int(away.get("score") or 0),
-            "state":     state,
-            "clock":     status.get("displayClock", ""),
-            "period":    status.get("period", 1),
-            "detail":    detail,
+            "state":     st_type.get("state", ""),        # "pre" | "in" | "post"
+            "clock":     status.get("displayClock", ""),  # e.g. "67:23"
+            "period":    status.get("period", 1),         # 1 or 2
+            "detail":    st_type.get("shortDetail", ""),  # e.g. "2nd Half, 67:00"
         }
     return out
 
@@ -104,6 +148,10 @@ def main():
         print("ERROR: FOOTBALL_DATA_API_KEY not set", file=sys.stderr)
         sys.exit(1)
 
+    if not in_match_window():
+        print("  Quiet period — no active or imminent matches. Skipping fetches.")
+        return
+
     matches   = fetch("/competitions/WC/matches")
     standings = fetch("/competitions/WC/standings")
 
@@ -114,17 +162,15 @@ def main():
     write("data/matches.json",   matches)
     write("data/standings.json", standings)
 
-    # ESPN live scores — always fetch so the dashboard has fresh clock data
-    espn_raw   = fetch_espn()
+    espn_raw    = fetch_espn()
     espn_scores = parse_espn(espn_raw)
-    live_json  = {
+    write("data/live.json", {
         "_meta":   {**meta, "source": "ESPN"},
         "matches": espn_scores,
-    }
-    write("data/live.json", live_json)
+    })
 
-    n_matches = len(matches.get("matches", []))
-    n_groups  = len(standings.get("standings", []))
+    n_matches  = len(matches.get("matches", []))
+    n_groups   = len(standings.get("standings", []))
     live_count = sum(
         1 for m in matches.get("matches", [])
         if m.get("status") in ("LIVE", "IN_PLAY", "PAUSED")
