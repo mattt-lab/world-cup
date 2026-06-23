@@ -74,7 +74,7 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ World Cup <em>2026</em> <span class="logo-ver">v0.6</span></div>
+    <div class="logo">⚽ World Cup <em>2026</em> <span class="logo-ver">v1.0</span></div>
     <nav>
         <a href="wc-dashboard.html">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -110,6 +110,46 @@ const STAGE_LABEL = {
 };
 const LIVE_ST  = new Set(['LIVE','IN_PLAY','PAUSED']);
 const DONE_ST  = new Set(['FINISHED','AWARDED']);
+
+// ── Venue lookup ─────────────────────────────────────────────────────────────
+const VENUE = {
+    537327:'Mexico City',    537328:'Guadalajara',   537333:'Toronto',
+    537345:'Dallas',         537334:'Houston',       537339:'Kansas City',
+    537340:'Atlanta',        537346:'Los Angeles',   537351:'Seattle',
+    537357:'Dallas',         537352:'Miami',         537358:'Kansas City',
+    537369:'Philadelphia',   537363:'Boston',        537370:'Monterrey',
+    537364:'Houston',        537391:'New York',      537392:'Vancouver',
+    537397:'Dallas',         537398:'Guadalajara',   537403:'Los Angeles',
+    537409:'Miami',          537410:'Monterrey',     537404:'Seattle',
+    537329:'Houston',        537335:'Vancouver',     537336:'Kansas City',
+    537330:'Guadalajara',    537348:'Los Angeles',   537342:'Boston',
+    537341:'Atlanta',        537347:'New York',      537359:'Philadelphia',
+    537353:'Dallas',         537354:'Seattle',       537360:'Los Angeles',
+    537371:'Boston',         537365:'Kansas City',   537372:'Miami',
+    537366:'Houston',        537399:'Monterrey',     537393:'New York',
+    537394:'Seattle',        537400:'Los Angeles',   537405:'Boston',
+    537411:'Dallas',         537412:'Philadelphia',  537406:'Guadalajara',
+    537337:'Toronto',        537338:'Mexico City',   537344:'Vancouver',
+    537343:'Seattle',        537331:'Miami',         537332:'Monterrey',
+    537355:'Houston',        537356:'Atlanta',       537361:'Kansas City',
+    537362:'New York',       537349:'Dallas',        537350:'Los Angeles',
+    537395:'Philadelphia',   537396:'Boston',        537373:'Atlanta',
+    537374:'Toronto',        537367:'Miami',         537368:'Guadalajara',
+    537413:'Vancouver',      537414:'Houston',       537407:'New York',
+    537408:'Mexico City',    537401:'Monterrey',     537402:'Seattle',
+    537417:'Dallas',         537423:'New York',      537415:'Los Angeles',
+    537418:'Philadelphia',   537424:'Atlanta',       537416:'Kansas City',
+    537425:'Seattle',        537426:'Miami',         537422:'Boston',
+    537421:'Guadalajara',    537420:'Dallas',        537419:'Houston',
+    537429:'Los Angeles',    537428:'New York',      537427:'Atlanta',
+    537430:'Dallas',
+    537376:'Kansas City',    537375:'Los Angeles',   537377:'New York',
+    537378:'Dallas',         537379:'Philadelphia',  537380:'Los Angeles',
+    537381:'Atlanta',        537382:'Boston',
+    537383:'New York',       537384:'Los Angeles',   537385:'Dallas',       537386:'Atlanta',
+    537387:'Dallas',         537388:'New York',
+    537389:'Miami',          537390:'New York',
+};
 
 // ── Cache ─────────────────────────────────────────────────────────────────────
 function cacheGet(k){try{const r=JSON.parse(localStorage.getItem(k)||'null');return r&&Date.now()-r.ts<r.ttl?r.data:null}catch{return null}}
@@ -155,12 +195,13 @@ function matchCard(m){
     const atTxt=at?.name?`<span class="team-txt ${winCls(m,'away')}">${at.shortName||at.name}</span>`:`<span class="team-tbd">TBD</span>`;
     const scoreHtml=h!==null?`<span>${h}</span><span class="score-sep">–</span><span>${a}</span>`:`<span class="score-vs">vs</span>`;
     const grpTxt=m.group?` · Grp ${m.group.replace('GROUP_','')}${m.matchday?` MD${m.matchday}`:''}`:m.matchday?` · MD${m.matchday}`:'';
+    const cityTxt=VENUE[m.id]?` · ${VENUE[m.id]}`:'';
     return`<div class="match-card ${live?'live-card':''} ${DONE_ST.has(m.status)?'finished-card':''}">
         <div class="match-team">${crest(ht,30)}${htTxt}</div>
         <div class="match-center">
             <div class="score-nums">${scoreHtml}</div>
             <div class="match-status ${cls}">${label}</div>
-            <div class="match-meta">${fmtTime(m.utcDate)}${grpTxt}</div>
+            <div class="match-meta">${fmtTime(m.utcDate)}${grpTxt}${cityTxt}</div>
         </div>
         <div class="match-team away">${atTxt}${crest(at,30)}</div>
     </div>`;

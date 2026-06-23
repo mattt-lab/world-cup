@@ -56,7 +56,11 @@ a.match-link:hover{transform:translateY(-1px)}
 a.match-link:hover .match-card{border-color:#2e2e2e}
 
 .match-card{background:#151515;border:1px solid #1e1e1e;border-radius:12px;padding:14px 16px 10px;cursor:pointer}
-.match-card.finished-card{opacity:.9}
+.match-card.finished-card{opacity:.72}
+.match-card.next-up-card{border:1.5px solid rgba(34,197,94,.45);background:rgba(34,197,94,.03)}
+.up-next-badge{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#22c55e;margin-bottom:8px}
+.subsec-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#444;margin:4px 0 8px}
+.subsec-label.green{color:#22c55e}
 .match-row{display:flex;align-items:center;gap:10px}
 .match-team{flex:1;display:flex;align-items:center;gap:9px;min-width:0}
 .match-team.away{justify-content:flex-end;text-align:right}
@@ -89,7 +93,7 @@ a.match-link:hover .match-card{border-color:#2e2e2e}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ World Cup <em>2026</em> <span class="logo-ver">v0.6</span></div>
+    <div class="logo">⚽ World Cup <em>2026</em> <span class="logo-ver">v1.0</span></div>
     <nav>
         <a href="wc-dashboard.html" class="active">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -407,7 +411,7 @@ function liveHeroCard(m, standingsArr){
 }
 
 // ── Regular match card (blurb inside, links to group standings) ───────────────
-function matchCard(m, blurb){
+function matchCard(m, blurb, isNext=false){
     const{h,a,label,cls}=matchSt(m);
     const ht=m.homeTeam,at=m.awayTeam;
     const htName=ht?.name?`<span class="team-name-txt ${winClass(m,'home')}">${ht.shortName||ht.name}</span>`:`<span class="team-tbd">TBD</span>`;
@@ -418,10 +422,12 @@ function matchCard(m, blurb){
     const md=m.matchday?` MD${m.matchday}`:'';
     const city=VENUE[m.id]?` · ${VENUE[m.id]}`:'';
     const blurbHtml=blurb?`<div class="match-blurb">${blurb}</div>`:'';
-    // Link to the specific group anchor on the groups page
     const grpAnchor=m.group?`#group-${m.group.replace('GROUP_','').toLowerCase()}`:'';
+    const cardCls=[isDone(m)?'finished-card':'',isNext?'next-up-card':''].filter(Boolean).join(' ');
+    const upNextBadge=isNext?`<div class="up-next-badge">▶ Up next</div>`:'';
     return`<a class="match-link" href="wc-groups.html${grpAnchor}">
-        <div class="match-card ${isDone(m)?'finished-card':''}">
+        <div class="match-card ${cardCls}">
+            ${upNextBadge}
             <div class="match-row">
                 <div class="match-team">${crest(ht)}${htName}</div>
                 <div class="match-center">
@@ -476,12 +482,22 @@ function renderMatches(matches,standingsArr){
     }
 
     const el=document.getElementById('today-section');
-    const nonLive=todayMs.filter(m=>!isLive(m));
 
     if(todayMs.length){
-        el.innerHTML=`<div class="section-label">Today's Matches</div>
-            <div class="day-header">${fmtDay(todayMs[0].utcDate)}</div>`+
-            nonLive.map(m=>matchCard(m,computeStakes(m,standingsArr))).join('');
+        const upcoming=todayMs.filter(m=>!isLive(m)&&!isDone(m))
+            .sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
+        const finished=todayMs.filter(m=>isDone(m))
+            .sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
+        let html=`<div class="section-label">${fmtDay(todayMs[0].utcDate)}</div>`;
+        if(upcoming.length){
+            html+=`<div class="subsec-label green">Coming up</div>`;
+            html+=upcoming.map((m,i)=>matchCard(m,computeStakes(m,standingsArr),i===0)).join('');
+        }
+        if(finished.length){
+            html+=`<div class="subsec-label" style="margin-top:${upcoming.length?'18px':'4px'}">Earlier today</div>`;
+            html+=finished.map(m=>matchCard(m,computeStakes(m,standingsArr))).join('');
+        }
+        el.innerHTML=html;
         return;
     }
 
