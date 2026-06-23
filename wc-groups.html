@@ -154,7 +154,7 @@ function groupCardHtml(g){
         <td class="td-pts">${row.points}</td>
     </tr>`).join('');
 
-    return`<div class="group-card">
+    return`<div class="group-card" id="group-${letter.toLowerCase()}">
         <div class="group-header">
             <span class="group-title">Group ${letter}</span>
             <span class="group-played">${played} played</span>

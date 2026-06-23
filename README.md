@@ -15,7 +15,8 @@ The main view. Shows what's happening right now and what's on today.
 - **Live match hero card** — any in-progress match gets a full-width hero treatment: large 52px team crests, bold 44px score, green glow border, and a rich 2–4 sentence blurb that covers:
   - *What's at stake* — computed from live standings (who needs a win, who's already through, must-not-lose situations)
   - *Who to watch* — a hand-written player spotlight sentence for every nation in the tournament (48+ teams)
-- **Today's matches** — compact cards for all other games on the day, each with a one-sentence "what this match means" blurb based on the current group table.
+- **Today's matches** — compact cards for each game on the day, each with a 2-sentence "what this match means" blurb (computed from standings) and the host city, all inside the card bounding box. Clicking any card jumps directly to that team's group on the Groups page.
+- **Stale-LIVE guard** — if the API lags in marking a finished match, any match that started more than 130 minutes ago is treated as finished rather than shown as live.
 - **Auto-refresh** — when a live match is detected, the page quietly re-fetches data every 60 seconds so scores stay current.
 
 ### Groups (`wc-groups.html`)
@@ -60,6 +61,8 @@ The workflow runs every 5 minutes between noon and 3 AM UTC (covering all match 
 **Computed match blurbs** — no LLM required. Each blurb is generated from the live standings table using a set of conditional templates covering every meaningful matchday-2 and matchday-3 scenario (both teams won, one lost, both drew, elimination pressure, already qualified, etc.). The output reads like editorial copy.
 
 **Player spotlights** — a curated one-sentence description of the key player to watch for every nation in the tournament. Combined with the stakes text, each live hero card gives you a genuine reason to care about the match even if you've just tuned in.
+
+**Host city** — a hardcoded match ID → city lookup table covers all 104 matches (football-data.org free tier omits venue data). Each card shows the city alongside the group/matchday metadata.
 
 **localStorage caching** — match and standings data is cached for 120 seconds so navigating between pages doesn't trigger redundant fetches.
 

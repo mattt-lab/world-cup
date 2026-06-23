@@ -27,20 +27,11 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 .phase-title{font-size:20px;font-weight:800;letter-spacing:-.01em}
 .phase-sub{font-size:12px;color:#666;margin-top:3px}
 .live-count{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#22c55e}
-
-/* Live dot (reused in multiple places) */
 .live-dot{display:inline-block;width:8px;height:8px;background:#22c55e;border-radius:50%;flex-shrink:0;animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 
-/* ── Hero live card ──────────────────────────────────────────────────── */
-.hero-card{
-    background:linear-gradient(135deg,rgba(34,197,94,.07),rgba(34,197,94,.03));
-    border:1px solid rgba(34,197,94,.45);
-    border-radius:16px;
-    padding:22px 20px 18px;
-    margin-bottom:8px;
-    box-shadow:0 0 32px rgba(34,197,94,.08);
-}
+/* ── Hero live card ──────────────────────────────────────────────────────────── */
+.hero-card{background:linear-gradient(135deg,rgba(34,197,94,.07),rgba(34,197,94,.03));border:1px solid rgba(34,197,94,.45);border-radius:16px;padding:22px 20px 18px;margin-bottom:8px;box-shadow:0 0 32px rgba(34,197,94,.08)}
 .hero-badge{display:flex;align-items:center;gap:7px;margin-bottom:16px}
 .hero-live-pill{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#22c55e;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:20px;padding:3px 10px}
 .hero-context{font-size:11px;color:#666;letter-spacing:.02em}
@@ -58,10 +49,15 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 .hero-status.ht{color:#f59e0b}
 .hero-blurb{font-size:12px;color:#888;line-height:1.65;padding-top:16px;border-top:1px solid rgba(34,197,94,.12);margin-top:16px;font-style:italic}
 
-/* ── Regular match cards ─────────────────────────────────────────────── */
-.match-card{background:#151515;border:1px solid #1e1e1e;border-radius:12px;padding:14px 16px;margin-bottom:4px;display:flex;align-items:center;gap:10px;transition:border-color .15s}
-.match-card:hover{border-color:#2a2a2a}
+/* ── Regular match cards ─────────────────────────────────────────────────────── */
+/* Wrapped in an <a> — kill link styles */
+a.match-link{display:block;margin-bottom:8px;border-radius:12px;transition:transform .1s}
+a.match-link:hover{transform:translateY(-1px)}
+a.match-link:hover .match-card{border-color:#2e2e2e}
+
+.match-card{background:#151515;border:1px solid #1e1e1e;border-radius:12px;padding:14px 16px 10px;cursor:pointer}
 .match-card.finished-card{opacity:.9}
+.match-row{display:flex;align-items:center;gap:10px}
 .match-team{flex:1;display:flex;align-items:center;gap:9px;min-width:0}
 .match-team.away{justify-content:flex-end;text-align:right}
 .crest-wrap{flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#1e1e1e;border-radius:6px;overflow:hidden}
@@ -79,12 +75,12 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 .st-ft{color:#444}
 .st-soon{color:#f0f0f0}
 .match-meta{font-size:10px;color:#555;margin-top:2px;letter-spacing:.02em}
-.match-blurb{font-size:11px;color:#666;line-height:1.55;padding:5px 6px 12px;font-style:italic}
+/* Blurb now sits inside the card */
+.match-blurb{font-size:11px;color:#666;line-height:1.55;padding-top:9px;margin-top:9px;border-top:1px solid #1a1a1a;font-style:italic}
 
 .day-header{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.08em;padding:5px 0 8px;margin-top:20px;border-bottom:1px solid #1a1a1a;margin-bottom:10px}
 .day-header:first-child{margin-top:0}
 
-/* Skel */
 .skel{background:linear-gradient(90deg,#181818 25%,#222 50%,#181818 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .error-msg{background:#151515;border:1px solid #1e1e1e;border-radius:10px;padding:24px;text-align:center;color:#444;font-size:13px}
@@ -127,11 +123,52 @@ const STAGE_LABEL = {
     THIRD_PLACE:'3rd Place Playoff', FINAL:'Final',
 };
 const STAGE_ORDER = ['GROUP_STAGE','LAST_32','LAST_16','QUARTER_FINALS','SEMI_FINALS','THIRD_PLACE','FINAL'];
-const LIVE_ST  = new Set(['LIVE','IN_PLAY','PAUSED']);
 const DONE_ST  = new Set(['FINISHED','AWARDED']);
 const SCHED_ST = new Set(['TIMED','SCHEDULED']);
 
-// ── Player spotlights (one sentence per team, used in live blurbs) ────────────
+// ── Venue lookup (hardcoded — free API tier omits this field) ─────────────────
+// Source: official 2026 FIFA World Cup match schedule
+const VENUE = {
+    537327:'Mexico City',    537328:'Guadalajara',   537333:'Toronto',
+    537345:'Dallas',         537334:'Houston',       537339:'Kansas City',
+    537340:'Atlanta',        537346:'Los Angeles',   537351:'Seattle',
+    537357:'Dallas',         537352:'Miami',         537358:'Kansas City',
+    537369:'Philadelphia',   537363:'Boston',        537370:'Monterrey',
+    537364:'Houston',        537391:'New York',      537392:'Vancouver',
+    537397:'Dallas',         537398:'Guadalajara',   537403:'Los Angeles',
+    537409:'Miami',          537410:'Monterrey',     537404:'Seattle',
+    537329:'Houston',        537335:'Vancouver',     537336:'Kansas City',
+    537330:'Guadalajara',    537348:'Los Angeles',   537342:'Boston',
+    537341:'Atlanta',        537347:'New York',      537359:'Philadelphia',
+    537353:'Dallas',         537354:'Seattle',       537360:'Los Angeles',
+    537371:'Boston',         537365:'Kansas City',   537372:'Miami',
+    537366:'Houston',        537399:'Monterrey',     537393:'New York',
+    537394:'Seattle',        537400:'Los Angeles',   537405:'Boston',
+    537411:'Dallas',         537412:'Philadelphia',  537406:'Guadalajara',
+    537337:'Toronto',        537338:'Mexico City',   537344:'Vancouver',
+    537343:'Seattle',        537331:'Miami',         537332:'Monterrey',
+    537355:'Houston',        537356:'Atlanta',       537361:'Kansas City',
+    537362:'New York',       537349:'Dallas',        537350:'Los Angeles',
+    537395:'Philadelphia',   537396:'Boston',        537373:'Atlanta',
+    537374:'Toronto',        537367:'Miami',         537368:'Guadalajara',
+    537413:'Vancouver',      537414:'Houston',       537407:'New York',
+    537408:'Mexico City',    537401:'Monterrey',     537402:'Seattle',
+    // Knockout rounds
+    537417:'Dallas',         537423:'New York',      537415:'Los Angeles',
+    537418:'Philadelphia',   537424:'Atlanta',       537416:'Kansas City',
+    537425:'Seattle',        537426:'Miami',         537422:'Boston',
+    537421:'Guadalajara',    537420:'Dallas',        537419:'Houston',
+    537429:'Los Angeles',    537428:'New York',      537427:'Atlanta',
+    537430:'Dallas',
+    537376:'Kansas City',    537375:'Los Angeles',   537377:'New York',
+    537378:'Dallas',         537379:'Philadelphia',  537380:'Los Angeles',
+    537381:'Atlanta',        537382:'Boston',
+    537383:'New York',       537384:'Los Angeles',   537385:'Dallas',       537386:'Atlanta',
+    537387:'Dallas',         537388:'New York',
+    537389:'Miami',          537390:'New York',   // Final: MetLife Stadium
+};
+
+// ── Player spotlights ─────────────────────────────────────────────────────────
 const SPOTLIGHT = {
     'Argentina':        'Lautaro Martínez carries the goal threat for Argentina with clinical movement and a deadly finish.',
     'Australia':        'Mathew Ryan is exceptional in goal; Australia\'s best chance of causing an upset rests on his saves.',
@@ -194,7 +231,7 @@ const SPOTLIGHT = {
     'Spain':            'Lamine Yamal at just 18 is already the most exciting young player in world football; Pedri controls the midfield with elegance.',
     'Sweden':           'Viktor Gyökeres arrives as one of Europe\'s most in-form strikers — his movement, hold-up play, and finishing are elite.',
     'Switzerland':      'Granit Xhaka\'s experience and Xherdan Shaqiri\'s creativity give Switzerland a midfield that punches well above its weight.',
-    'Trinidad and Tobago': 'Kevin Molino\'s pace and directness on the wing give Trinidad and Tobago a live wire who can unlock any defence.',
+    'Trinidad and Tobago':'Kevin Molino\'s pace and directness on the wing give Trinidad and Tobago a live wire who can unlock any defence.',
     'Tunisia':          'Youssef Msakni is Tunisia\'s creative heartbeat; their best results come from organised defending and his moments of magic.',
     'Turkey':           'Hakan Çalhanoğlu controls tempo from deep with exceptional passing range — all of Turkey\'s best football flows through him.',
     'Ukraine':          'Mykhailo Mudryk\'s electric pace and dribbling make him one of the most exciting wide players in the tournament.',
@@ -203,11 +240,9 @@ const SPOTLIGHT = {
     'Uzbekistan':       'Eldor Shomurodov is Uzbekistan\'s talisman — a powerful striker capable of holding up play and finishing against any defence.',
     'Venezuela':        'Yeferson Soteldo\'s low centre of gravity and quick feet make him almost impossible to dispossess in tight spaces.',
 };
-
-function getSpotlight(team) {
-    if (!team?.name) return null;
-    // Try exact name, then shortName
-    return SPOTLIGHT[team.name] || SPOTLIGHT[team.shortName] || null;
+function getSpotlight(team){
+    if(!team?.name)return null;
+    return SPOTLIGHT[team.name]||SPOTLIGHT[team.shortName]||null;
 }
 
 // ── Cache ─────────────────────────────────────────────────────────────────────
@@ -223,50 +258,61 @@ const getMatches   = ()=>loadJson('matches.json','wc_matches',120000);
 const getStandings = ()=>loadJson('standings.json','wc_standings',120000);
 
 // ── Crest helpers ─────────────────────────────────────────────────────────────
-function crest(team, sz=34){
-    const url=team?.crest, tla=team?.tla||'?';
+function crest(team,sz=34){
+    const url=team?.crest,tla=team?.tla||'?';
     if(!url)return`<div class="crest-wrap" style="width:${sz}px;height:${sz}px"><span class="crest-tla">${tla}</span></div>`;
     return`<div class="crest-wrap" style="width:${sz}px;height:${sz}px"><img src="${url}" width="${sz}" height="${sz}" alt="${tla}" onerror="this.style.display='none'"></div>`;
 }
 function heroCrest(team){
-    const url=team?.crest, tla=team?.tla||'?';
+    const url=team?.crest,tla=team?.tla||'?';
     return`<div class="hero-crest">${url?`<img src="${url}" width="52" height="52" alt="${tla}" onerror="this.style.display='none'">`:`<span class="crest-tla">${tla}</span>`}</div>`;
 }
 
-// ── Date helpers ──────────────────────────────────────────────────────────────
+// ── Date / status helpers ─────────────────────────────────────────────────────
 function localDay(utc){const d=new Date(utc);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function todayDay(){return localDay(new Date().toISOString())}
 function fmtDay(utc){return new Date(utc).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
 function fmtTime(utc){return new Date(utc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
 
-// ── Match status helpers ──────────────────────────────────────────────────────
+// Correct for API lag: if a LIVE match started >130 min ago, treat as FINISHED
+function effectiveStatus(m){
+    if(m.status==='LIVE'||m.status==='IN_PLAY'){
+        const elapsedMin=(Date.now()-new Date(m.utcDate))/60000;
+        if(elapsedMin>130)return'FINISHED';
+    }
+    return m.status;
+}
+function isLive(m){ const s=effectiveStatus(m); return s==='LIVE'||s==='IN_PLAY'||s==='PAUSED'; }
+function isDone(m){ return DONE_ST.has(effectiveStatus(m)); }
+
 function matchSt(m){
     const s=m.score?.fullTime;
-    if(DONE_ST.has(m.status))  return{h:s?.home??'-',a:s?.away??'-',label:'FT',cls:'st-ft',live:false};
-    if(m.status==='LIVE')      return{h:s?.home??0,  a:s?.away??0,  label:'● LIVE',cls:'st-live',live:true};
-    if(m.status==='PAUSED')    return{h:s?.home??0,  a:s?.away??0,  label:'HT',cls:'st-ht',live:true};
-    return{h:null,a:null,label:fmtTime(m.utcDate),cls:'st-soon',live:false};
+    const eff=effectiveStatus(m);
+    if(DONE_ST.has(eff))    return{h:s?.home??'-',a:s?.away??'-',label:'FT',cls:'st-ft'};
+    if(eff==='LIVE')        return{h:s?.home??0, a:s?.away??0, label:'● LIVE',cls:'st-live'};
+    if(eff==='PAUSED')      return{h:s?.home??0, a:s?.away??0, label:'HT',cls:'st-ht'};
+    return{h:null,a:null,label:fmtTime(m.utcDate),cls:'st-soon'};
 }
 function winClass(m,side){
-    if(!DONE_ST.has(m.status))return'';
+    if(!isDone(m))return'';
     const w=m.score?.winner;if(!w||w==='DRAW')return'';
     return((side==='home'&&w==='HOME_TEAM')||(side==='away'&&w==='AWAY_TEAM'))?'winner':'loser';
 }
 
 // ── Phase detection ───────────────────────────────────────────────────────────
 function detectPhase(matches){
-    const started=new Set(matches.filter(m=>DONE_ST.has(m.status)||LIVE_ST.has(m.status)).map(m=>m.stage));
+    const started=new Set(matches.filter(m=>isDone(m)||isLive(m)).map(m=>m.stage));
     for(const s of [...STAGE_ORDER].reverse())if(started.has(s))return s;
     for(const s of STAGE_ORDER)if(matches.some(m=>m.stage===s))return s;
     return'GROUP_STAGE';
 }
 function detectMatchday(matches,stage){
     if(stage!=='GROUP_STAGE')return null;
-    const played=matches.filter(m=>m.stage==='GROUP_STAGE'&&(DONE_ST.has(m.status)||LIVE_ST.has(m.status))).map(m=>m.matchday);
+    const played=matches.filter(m=>m.stage==='GROUP_STAGE'&&(isDone(m)||isLive(m))).map(m=>m.matchday);
     return played.length?Math.max(...played):1;
 }
 
-// ── Blurb: stakes from standings ──────────────────────────────────────────────
+// ── Stakes blurb (always 2 sentences) ────────────────────────────────────────
 function computeStakes(match, standingsArr){
     if(match.stage!=='GROUP_STAGE')return'';
     if(!match.homeTeam?.name||!match.awayTeam?.name)return'';
@@ -283,114 +329,111 @@ function computeStakes(match, standingsArr){
     const md=match.matchday||1;
     const grpLetter=(grpLabel||'').replace('Group ','');
 
-    if(DONE_ST.has(match.status)){
+    if(isDone(match)){
         const w=match.score?.winner;
         const winner=w==='HOME_TEAM'?hn:w==='AWAY_TEAM'?an:null;
-        return winner?`${winner} took all three points in Group ${grpLetter}.`:`The sides shared the points in Group ${grpLetter}.`;
+        const s1=winner?`${winner} took all three points in Group ${grpLetter}.`:`The sides shared the points in a draw in Group ${grpLetter}.`;
+        const s2=winner
+            ?`${winner==='home'?an:hn} will need to regroup ahead of their final group game.`
+            :`Both teams remain level and will head into the final matchday with everything still to play for.`;
+        return`${s1} ${s2}`;
     }
-    if(md===1) return`Opening game in Group ${grpLetter} — both sides looking to get off to a winning start. The mood and momentum from this game can shape the rest of the group.`;
+    if(md===1) return`Opening game in Group ${grpLetter} — both sides looking to get off to a winning start. The mood and momentum from this game will shape how both teams approach the rest of the group stage.`;
     if(md===2){
-        if(hp===3&&ap===3) return`Both ${hn} and ${an} won their openers and come in level on three points. The winner all but leads Group ${grpLetter} into the final matchday.`;
-        if(hp===3&&ap===0) return`${hn} arrive in form after a matchday-one win; ${an} are already under pressure after a defeat. A second loss here would put ${an}'s World Cup in serious jeopardy.`;
-        if(hp===0&&ap===3) return`${an} are flying after a matchday-one win while ${hn} are in desperate need of a response after their opening defeat. A loss here could end ${hn}'s hopes.`;
-        if(hp===1&&ap===1) return`Both sides drew their openers and come into this evenly matched. Whoever takes three points here moves into a very strong position heading into matchday three.`;
-        if(hp===3&&ap===1) return`${hn} lead the group after a matchday-one win; ${an} drew their opener and know a defeat today leaves them needing a result on the final matchday.`;
-        if(hp===1&&ap===3) return`${an} come in top of the group; ${hn} drew their opener and need a win here to keep qualification in their own hands.`;
-        if(hp===0&&ap===0) return`Both teams lost their openers — this is already a must-win situation. The loser will almost certainly be heading home after the group stage.`;
-        if(hp===0&&ap===1) return`${hn} are in deep trouble after losing on matchday one. Only a win will do for ${hn}; ${an} just need to avoid defeat to stay comfortable.`;
-        if(hp===1&&ap===0) return`${an} are in deep trouble after losing on matchday one. Only a win will do for ${an}; ${hn} just need to avoid defeat to stay comfortable.`;
+        if(hp===3&&ap===3) return`Both ${hn} and ${an} won their openers and come in level on three points. The winner takes control of Group ${grpLetter} heading into the final matchday.`;
+        if(hp===3&&ap===0) return`${hn} arrive in form after a matchday-one win; ${an} are under real pressure after a defeat. A second loss here would put ${an}'s World Cup in serious jeopardy.`;
+        if(hp===0&&ap===3) return`${an} are flying after a matchday-one win while ${hn} need a response after their opening defeat. A loss here could effectively end ${hn}'s hopes.`;
+        if(hp===1&&ap===1) return`Both sides drew their openers and come into this evenly matched. Whoever takes three points tonight moves into a very strong position heading into the final matchday.`;
+        if(hp===3&&ap===1) return`${hn} lead the group after a matchday-one win; ${an} drew their opener and know a defeat today leaves them needing a result on the final matchday. Three points could see ${an} still advance as one of the best third-place teams.`;
+        if(hp===1&&ap===3) return`${an} come in top of the group; ${hn} drew their opener and need a win here to keep qualification in their own hands. A loss would leave ${hn} relying on other results.`;
+        if(hp===0&&ap===0) return`Both teams lost their openers — this is already a must-win situation for both sides. The loser here is all but eliminated from the tournament.`;
+        if(hp===0&&ap===1) return`${hn} are in deep trouble after losing on matchday one — only a win will do. ${an} know even a draw keeps them in a healthy position heading into the final game.`;
+        if(hp===1&&ap===0) return`${an} are in deep trouble after losing on matchday one — only a win will do. ${hn} know even a draw keeps them in a healthy position heading into the final game.`;
     }
     if(md===3){
-        if(hp>=6) return`${hn} are already through to the knockout stage. They may rotate the squad here — ${an} will look to take advantage of any drop in intensity.`;
-        if(ap>=6) return`${an} are already through to the knockout stage. They may rotate the squad here — ${hn} will look to take advantage of any drop in intensity.`;
+        if(hp>=6) return`${hn} are already through to the knockout stage. They may rotate the squad — ${an} will look to take advantage of any drop in intensity.`;
+        if(ap>=6) return`${an} are already through to the knockout stage. They may rotate the squad — ${hn} will look to take advantage of any drop in intensity.`;
         if(hp>=4&&ap>=4) return`Both sides can advance with a draw in this final group game. Expect a tense, tactical battle where neither side wants to take risks.`;
-        if(hp>=4) return`${hn} need only a point to seal their place in the knockout round. ${an} must attack to have any chance — which could open space for ${hn} on the break.`;
-        if(ap>=4) return`${an} need only a point to advance. ${hn} must attack and win, which could open space for ${an} to counter.`;
-        if(hp===3&&ap===3) return`Perfectly balanced on the final matchday — both ${hn} and ${an} need a win to feel safe, though a draw and the right result elsewhere could still see both through.`;
-        if(hp===0&&ap===0) return`Neither side has a point — both need a win and a swing in goal difference just to have a chance. Expect a wide-open, high-risk contest.`;
-        return`Final matchday in Group ${grpLetter}. ${hn} (${hp} pts) and ${an} (${ap} pts) both know exactly what they need to do.`;
+        if(hp>=4) return`${hn} need only a point to seal their place in the knockout round. ${an} must attack and win, which could open space for ${hn} to exploit on the counter.`;
+        if(ap>=4) return`${an} need only a point to advance. ${hn} must attack and win — which could open space for ${an} to hit them on the break.`;
+        if(hp===3&&ap===3) return`Perfectly balanced on the final matchday — both sides need a win to feel safe, though a draw and the right result elsewhere could still see both through. Neither team will want to sit back.`;
+        if(hp===0&&ap===0) return`Neither side has a point — both need a win and a swing in goal difference to have any chance of advancing. Expect a wide-open, high-risk contest.`;
+        return`Final matchday in Group ${grpLetter}. ${hn} (${hp} pts) and ${an} (${ap} pts) both know exactly what they need to advance.`;
     }
     return'';
 }
 
-// ── Short blurb (for regular cards) ──────────────────────────────────────────
-function computeBlurb(match, standingsArr){
-    return computeStakes(match, standingsArr);
-}
-
-// ── Long blurb (for live hero cards) ─────────────────────────────────────────
+// Long blurb for live hero: stakes + both player spotlights
 function computeLiveBlurb(match, standingsArr){
-    const stakes = computeStakes(match, standingsArr);
-    const hs = getSpotlight(match.homeTeam);
-    const as_ = getSpotlight(match.awayTeam);
-    const parts = [];
-    if(stakes) parts.push(stakes);
-    if(hs)  parts.push(hs);
-    if(as_) parts.push(as_);
+    const parts=[];
+    const stakes=computeStakes(match,standingsArr);
+    if(stakes)parts.push(stakes);
+    const hs=getSpotlight(match.homeTeam);
+    const as_=getSpotlight(match.awayTeam);
+    if(hs)parts.push(hs);
+    if(as_)parts.push(as_);
     return parts.join(' ');
 }
 
 // ── Hero live card ────────────────────────────────────────────────────────────
 function liveHeroCard(m, standingsArr){
     const s=m.score?.fullTime;
-    const h = m.status==='PAUSED' ? (s?.home??0) : (s?.home??0);
-    const a = m.status==='PAUSED' ? (s?.away??0) : (s?.away??0);
-    const statusLabel = m.status==='PAUSED' ? 'Half Time' : '● Live';
-    const statusCls = m.status==='PAUSED' ? 'ht' : '';
+    const h=s?.home??0, a=s?.away??0;
+    const isHT=m.status==='PAUSED';
+    const statusLabel=isHT?'Half Time':'● Live';
+    const statusCls=isHT?'ht':'';
     const grp=m.group?`Group ${m.group.replace('GROUP_','')} · `:'';
     const lbl=STAGE_LABEL[m.stage]||m.stage;
     const md=m.matchday?` · Matchday ${m.matchday}`:'';
+    const city=VENUE[m.id]?` · ${VENUE[m.id]}`:'';
     const hn=m.homeTeam?.name?m.homeTeam.shortName||m.homeTeam.name:'TBD';
     const an=m.awayTeam?.name?m.awayTeam.shortName||m.awayTeam.name:'TBD';
-    const blurb=computeLiveBlurb(m, standingsArr);
-
+    const blurb=computeLiveBlurb(m,standingsArr);
     return`<div class="hero-card">
         <div class="hero-badge">
             <div class="hero-live-pill"><span class="live-dot" style="width:6px;height:6px"></span>Live Now</div>
-            <span class="hero-context">${grp}${lbl}${md}</span>
+            <span class="hero-context">${grp}${lbl}${md}${city}</span>
         </div>
         <div class="hero-teams">
-            <div class="hero-team">
-                ${heroCrest(m.homeTeam)}
-                <span class="hero-name">${hn}</span>
-            </div>
+            <div class="hero-team">${heroCrest(m.homeTeam)}<span class="hero-name">${hn}</span></div>
             <div class="hero-center">
-                <div class="hero-score">
-                    <span>${h}</span>
-                    <span class="hero-score-sep">–</span>
-                    <span>${a}</span>
-                </div>
+                <div class="hero-score"><span>${h}</span><span class="hero-score-sep">–</span><span>${a}</span></div>
                 <div class="hero-status ${statusCls}">${statusLabel}</div>
             </div>
-            <div class="hero-team away">
-                <span class="hero-name">${an}</span>
-                ${heroCrest(m.awayTeam)}
-            </div>
+            <div class="hero-team away"><span class="hero-name">${an}</span>${heroCrest(m.awayTeam)}</div>
         </div>
         ${blurb?`<div class="hero-blurb">${blurb}</div>`:''}
     </div>`;
 }
 
-// ── Regular match card ────────────────────────────────────────────────────────
+// ── Regular match card (blurb inside, links to group standings) ───────────────
 function matchCard(m, blurb){
     const{h,a,label,cls}=matchSt(m);
-    const ht=m.homeTeam, at=m.awayTeam;
+    const ht=m.homeTeam,at=m.awayTeam;
     const htName=ht?.name?`<span class="team-name-txt ${winClass(m,'home')}">${ht.shortName||ht.name}</span>`:`<span class="team-tbd">TBD</span>`;
     const atName=at?.name?`<span class="team-name-txt ${winClass(m,'away')}">${at.shortName||at.name}</span>`:`<span class="team-tbd">TBD</span>`;
     const scoreHtml=h!==null?`<span>${h}</span><span class="score-sep">–</span><span>${a}</span>`:`<span class="score-vs">vs</span>`;
     const grp=m.group?`Grp ${m.group.replace('GROUP_','')} · `:'';
     const lbl=STAGE_LABEL[m.stage]||m.stage;
     const md=m.matchday?` MD${m.matchday}`:'';
+    const city=VENUE[m.id]?` · ${VENUE[m.id]}`:'';
     const blurbHtml=blurb?`<div class="match-blurb">${blurb}</div>`:'';
-    return`<div class="match-card ${DONE_ST.has(m.status)?'finished-card':''}">
-        <div class="match-team">${crest(ht)}${htName}</div>
-        <div class="match-center">
-            <div class="score-nums">${scoreHtml}</div>
-            <div class="match-status ${cls}">${label}</div>
-            <div class="match-meta">${grp}${lbl}${md}</div>
+    // Link to the specific group anchor on the groups page
+    const grpAnchor=m.group?`#group-${m.group.replace('GROUP_','').toLowerCase()}`:'';
+    return`<a class="match-link" href="wc-groups.html${grpAnchor}">
+        <div class="match-card ${isDone(m)?'finished-card':''}">
+            <div class="match-row">
+                <div class="match-team">${crest(ht)}${htName}</div>
+                <div class="match-center">
+                    <div class="score-nums">${scoreHtml}</div>
+                    <div class="match-status ${cls}">${label}</div>
+                    <div class="match-meta">${grp}${lbl}${md}${city}</div>
+                </div>
+                <div class="match-team away">${atName}${crest(at)}</div>
+            </div>
+            ${blurbHtml}
         </div>
-        <div class="match-team away">${atName}${crest(at)}</div>
-    </div>${blurbHtml}`;
+    </a>`;
 }
 
 // ── Render: phase banner ──────────────────────────────────────────────────────
@@ -398,7 +441,7 @@ function renderPhase(matches){
     const stage=detectPhase(matches);
     const md=detectMatchday(matches,stage);
     const sub=stage==='GROUP_STAGE'&&md?`Matchday ${md} of 3`:'';
-    const liveN=matches.filter(m=>LIVE_ST.has(m.status)).length;
+    const liveN=matches.filter(m=>isLive(m)).length;
     const liveHtml=liveN?`<div class="live-count"><div class="live-dot"></div>${liveN} LIVE now</div>`:'';
     document.getElementById('phase-section').innerHTML=`
     <div class="phase-banner">
@@ -418,45 +461,43 @@ function groupByDay(ms){
     return[...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
 }
 
-function renderMatches(matches, standingsArr){
+function renderMatches(matches,standingsArr){
     const today=todayDay();
-    const live=matches.filter(m=>LIVE_ST.has(m.status));
+    const live=matches.filter(m=>isLive(m));
     const todayMs=matches.filter(m=>localDay(m.utcDate)===today);
 
-    // Live section — hero cards
     if(live.length){
         document.getElementById('live-section').innerHTML=
             `<div class="section-label" style="color:#22c55e;margin-bottom:12px">Live Now</div>`+
-            live.map(m=>liveHeroCard(m, standingsArr)).join('')+
+            live.map(m=>liveHeroCard(m,standingsArr)).join('')+
             `<div style="height:24px"></div>`;
     } else {
         document.getElementById('live-section').innerHTML='';
     }
 
     const el=document.getElementById('today-section');
-    const nonLive=todayMs.filter(m=>!LIVE_ST.has(m.status));
+    const nonLive=todayMs.filter(m=>!isLive(m));
 
     if(todayMs.length){
         el.innerHTML=`<div class="section-label">Today's Matches</div>
             <div class="day-header">${fmtDay(todayMs[0].utcDate)}</div>`+
-            nonLive.map(m=>matchCard(m, computeBlurb(m, standingsArr))).join('');
+            nonLive.map(m=>matchCard(m,computeStakes(m,standingsArr))).join('');
         return;
     }
 
-    // No matches today — recent + upcoming
-    const recent=matches.filter(m=>DONE_ST.has(m.status)).sort((a,b)=>new Date(b.utcDate)-new Date(a.utcDate));
-    const upcoming=matches.filter(m=>SCHED_ST.has(m.status)).sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
+    const recent=matches.filter(m=>isDone(m)).sort((a,b)=>new Date(b.utcDate)-new Date(a.utcDate));
+    const upcoming=matches.filter(m=>SCHED_ST.has(effectiveStatus(m))).sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
     let html='';
     if(recent.length){
         html+=`<div class="section-label">Recent Results</div>`;
         for(const[,ms] of groupByDay(recent.slice(0,12)).slice(0,2)){
-            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(m=>matchCard(m, computeBlurb(m, standingsArr))).join('');
+            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(m=>matchCard(m,computeStakes(m,standingsArr))).join('');
         }
     }
     if(upcoming.length){
         html+=`<div class="section-label" style="margin-top:${recent.length?'28px':'0'}">Coming Up</div>`;
         for(const[,ms] of groupByDay(upcoming.slice(0,12)).slice(0,2)){
-            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(m=>matchCard(m, computeBlurb(m, standingsArr))).join('');
+            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(m=>matchCard(m,computeStakes(m,standingsArr))).join('');
         }
     }
     el.innerHTML=html||'<div class="error-msg">No matches found.</div>';
@@ -466,11 +507,8 @@ function renderMatches(matches, standingsArr){
 let _timer=null;
 function scheduleRefresh(matches){
     clearInterval(_timer);
-    if(matches.some(m=>LIVE_ST.has(m.status))){
-        _timer=setInterval(async()=>{
-            cacheSet('wc_matches',null,0);
-            try{await init();}catch{}
-        },60000);
+    if(matches.some(m=>isLive(m))){
+        _timer=setInterval(async()=>{cacheSet('wc_matches',null,0);try{await init();}catch{}},60000);
     }
 }
 
@@ -481,17 +519,15 @@ async function init(){
         const matches=md.matches||[];
         const standingsArr=(sd.standings||[]).filter(s=>s.type==='TOTAL');
         renderPhase(matches);
-        renderMatches(matches, standingsArr);
+        renderMatches(matches,standingsArr);
         scheduleRefresh(matches);
         const upd=md._meta?.updated||sd._meta?.updated;
         document.getElementById('refresh-note').textContent=upd
             ?`Data updated ${new Date(upd).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`
             :`Updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
     }catch(e){
-        const msg=e.message?.includes('404')?'Data not yet available — workflow may still be running.':
-                  `Error loading data: ${e.message}`;
         ['phase-section','today-section'].forEach(id=>{
-            document.getElementById(id).innerHTML=`<div class="error-msg">${msg}</div>`;
+            document.getElementById(id).innerHTML=`<div class="error-msg">Error: ${e.message}</div>`;
         });
     }
 }
