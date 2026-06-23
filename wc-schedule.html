@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Schedule · 2026 World Cup</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d0d;color:#f2f2f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh}
+a{color:inherit;text-decoration:none}
+
+header{border-bottom:1px solid #252525;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#0d0d0d;z-index:100}
+.logo{font-size:14px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.logo em{color:#27AE60;font-style:normal}
+nav a{font-size:11px;font-weight:600;color:#555;margin-left:22px;text-transform:uppercase;letter-spacing:.08em;transition:color .15s}
+nav a:hover{color:#f2f2f2}
+nav a.active{color:#27AE60}
+
+main{max-width:720px;margin:0 auto;padding:24px 16px 60px}
+.page-title{font-size:22px;font-weight:700;margin-bottom:16px}
+
+/* Stage filter tabs */
+.filter-bar{display:flex;gap:6px;margin-bottom:22px;flex-wrap:wrap}
+.filter-btn{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border-radius:20px;border:1px solid #252525;background:transparent;color:#666;cursor:pointer;transition:all .15s;white-space:nowrap}
+.filter-btn:hover{border-color:#444;color:#ccc}
+.filter-btn.active{background:#27AE60;border-color:#27AE60;color:#fff}
+
+/* Match cards */
+.match-card{background:#161616;border:1px solid #252525;border-radius:10px;padding:12px 16px;margin-bottom:6px;display:flex;align-items:center;gap:8px;transition:border-color .15s}
+.match-card:hover{border-color:#333}
+.match-card.live{border-color:#1d5c2e;background:#111814}
+.match-card.finished{opacity:.85}
+.match-team{flex:1;display:flex;align-items:center;gap:7px;min-width:0}
+.match-team.away{flex-direction:row-reverse;text-align:right}
+.team-flag{font-size:19px;flex-shrink:0;line-height:1}
+.team-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-name.winner{color:#f2f2f2}
+.team-name.loser{color:#555}
+.match-center{flex-shrink:0;text-align:center;min-width:84px}
+.score-nums{font-size:20px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;line-height:1}
+.score-sep{color:#444;font-weight:300;font-size:16px}
+.match-status{font-size:11px;font-weight:600;margin-top:3px}
+.st-ft{color:#555}
+.st-live{color:#27AE60}
+.st-ht{color:#E8B84B}
+.st-soon{color:#f2f2f2}
+.match-meta{font-size:10px;color:#444;margin-top:2px}
+
+/* Day / round headers */
+.day-header{margin:22px 0 8px;padding-bottom:6px;border-bottom:1px solid #1e1e1e}
+.day-header:first-child{margin-top:0}
+.day-title{font-size:13px;font-weight:700;color:#e0e0e0}
+.day-sub{font-size:10px;color:#444;margin-top:2px}
+
+/* Round label (knockout) */
+.round-header{margin:28px 0 10px;padding:10px 14px;background:#161616;border:1px solid #252525;border-radius:10px}
+.round-title{font-size:13px;font-weight:700;color:#E8B84B;letter-spacing:.03em}
+
+/* Skel */
+.skel{background:linear-gradient(90deg,#1c1c1c 25%,#262626 50%,#1c1c1c 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.error-msg{background:#161616;border:1px solid #252525;border-radius:10px;padding:28px;text-align:center;color:#555;font-size:13px}
+.refresh-note{font-size:10px;color:#333;text-align:right;margin-top:14px}
+.match-count{font-size:11px;color:#444;margin-bottom:14px}
+</style>
+</head>
+<body>
+<header>
+    <div class="logo">⚽ World Cup <em>2026</em> <span style="font-size:10px;font-weight:500;color:#444;margin-left:6px">v0.5</span></div>
+    <nav>
+        <a href="wc-dashboard.html">Today</a>
+        <a href="wc-groups.html">Groups</a>
+        <a href="wc-schedule.html" class="active">Schedule</a>
+    </nav>
+</header>
+
+<main>
+    <div class="page-title">Full Schedule</div>
+
+    <div class="filter-bar" id="filter-bar">
+        <div class="skel" style="height:28px;width:50px"></div>
+        <div class="skel" style="height:28px;width:90px"></div>
+        <div class="skel" style="height:28px;width:80px"></div>
+    </div>
+
+    <div id="schedule-body">
+        ${Array(6).fill(0).map(()=>`<div class="match-card"><div class="skel" style="height:50px;width:100%"></div></div>`).join('')}
+    </div>
+
+    <div class="refresh-note" id="refresh-note"></div>
+</main>
+
+<script>
+const API_KEY = 'b200b024810649c195ad69436cdc1a62';
+const BASE    = 'https://api.football-data.org/v4';
+let _reqAvail = 10, _resetMs = 0;
+
+const FLAGS = {
+    'Argentina':'🇦🇷','Australia':'🇦🇺','Austria':'🇦🇹','Belgium':'🇧🇪',
+    'Bolivia':'🇧🇴','Brazil':'🇧🇷','Canada':'🇨🇦','Cameroon':'🇨🇲',
+    'Chile':'🇨🇱','Colombia':'🇨🇴','Costa Rica':'🇨🇷','Croatia':'🇭🇷',
+    'Cuba':'🇨🇺','Czech Republic':'🇨🇿','Czechia':'🇨🇿','Denmark':'🇩🇰',
+    'DR Congo':'🇨🇩','Congo DR':'🇨🇩','Ecuador':'🇪🇨','Egypt':'🇪🇬',
+    'El Salvador':'🇸🇻','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','France':'🇫🇷','Germany':'🇩🇪',
+    'Ghana':'🇬🇭','Greece':'🇬🇷','Honduras':'🇭🇳','Hungary':'🇭🇺',
+    'Indonesia':'🇮🇩','Iran':'🇮🇷','Iraq':'🇮🇶','Italy':'🇮🇹',
+    "Côte d'Ivoire":'🇨🇮','Ivory Coast':'🇨🇮','Jamaica':'🇯🇲','Japan':'🇯🇵',
+    'Jordan':'🇯🇴','Kenya':'🇰🇪','Mali':'🇲🇱','Mexico':'🇲🇽',
+    'Morocco':'🇲🇦','Netherlands':'🇳🇱','New Zealand':'🇳🇿','Nigeria':'🇳🇬',
+    'Norway':'🇳🇴','Panama':'🇵🇦','Paraguay':'🇵🇾','Peru':'🇵🇪',
+    'Poland':'🇵🇱','Portugal':'🇵🇹','Qatar':'🇶🇦','Romania':'🇷🇴',
+    'Saudi Arabia':'🇸🇦','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Senegal':'🇸🇳','Serbia':'🇷🇸',
+    'Slovakia':'🇸🇰','Slovenia':'🇸🇮','South Africa':'🇿🇦',
+    'Korea Republic':'🇰🇷','South Korea':'🇰🇷','Spain':'🇪🇸',
+    'Sweden':'🇸🇪','Switzerland':'🇨🇭','Trinidad and Tobago':'🇹🇹',
+    'Tunisia':'🇹🇳','Turkey':'🇹🇷','Türkiye':'🇹🇷','Ukraine':'🇺🇦',
+    'United States':'🇺🇸','USA':'🇺🇸','Uruguay':'🇺🇾','Uzbekistan':'🇺🇿',
+    'Venezuela':'🇻🇪','Wales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿',
+};
+const flag = n => FLAGS[n] || '🏳';
+
+const STAGE_LABEL = {
+    GROUP_STAGE:'Group Stage', ROUND_OF_32:'Round of 32',
+    ROUND_OF_16:'Round of 16', QUARTER_FINALS:'Quarterfinals',
+    SEMI_FINALS:'Semifinals',  THIRD_PLACE:'3rd Place Playoff', FINAL:'Final',
+};
+const STAGE_ORDER = ['GROUP_STAGE','ROUND_OF_32','ROUND_OF_16','QUARTER_FINALS','SEMI_FINALS','THIRD_PLACE','FINAL'];
+
+// Stages that group by round header rather than date
+const KNOCKOUT_STAGES = new Set(['ROUND_OF_32','ROUND_OF_16','QUARTER_FINALS','SEMI_FINALS','THIRD_PLACE','FINAL']);
+
+function cacheGet(k) {
+    try {
+        const r = JSON.parse(localStorage.getItem(k)||'null');
+        if (!r || Date.now()-r.ts > r.ttl) return null;
+        return r.data;
+    } catch { return null; }
+}
+function cacheSet(k, data, ttl) {
+    try { localStorage.setItem(k, JSON.stringify({data,ts:Date.now(),ttl})); } catch {}
+}
+async function apiFetch(path, cacheKey, ttl=180000) {
+    const c = cacheKey ? cacheGet(cacheKey) : null;
+    if (c) return c;
+    if (_reqAvail <= 1 && _resetMs > Date.now())
+        await new Promise(r => setTimeout(r, _resetMs - Date.now() + 200));
+    const r = await fetch(`${BASE}${path}`, {headers:{'X-Auth-Token':API_KEY}});
+    const avail = r.headers.get('X-Requests-Available-Minute');
+    const reset = r.headers.get('X-RequestCounter-Reset');
+    if (avail !== null) _reqAvail = parseInt(avail, 10);
+    if (reset !== null) _resetMs  = Date.now() + parseInt(reset, 10) * 1000;
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    if (cacheKey) cacheSet(cacheKey, data, ttl);
+    return data;
+}
+
+function localDateStr(utcStr) {
+    const d = new Date(utcStr);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDayHeader(utcStr) {
+    return new Date(utcStr).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+}
+function fmtTime(utcStr) {
+    return new Date(utcStr).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+
+function matchStatus(m) {
+    const s = m.score?.fullTime;
+    const isLive = m.status === 'IN_PLAY';
+    const isPaused = m.status === 'PAUSED';
+    const isDone = m.status === 'FINISHED' || m.status === 'AWARDED';
+    if (isDone)   return { home:s.home, away:s.away, label:'FT',       cls:'st-ft',   liveClass:'' };
+    if (isLive)   return { home:s?.home??0, away:s?.away??0, label:'● LIVE', cls:'st-live', liveClass:'live' };
+    if (isPaused) return { home:s?.home??0, away:s?.away??0, label:'HT',     cls:'st-ht',   liveClass:'live' };
+    return { home:null, away:null, label:fmtTime(m.utcDate), cls:'st-soon', liveClass:'' };
+}
+
+function teamClass(m, side) {
+    if (m.status!=='FINISHED' && m.status!=='AWARDED') return '';
+    const w = m.score?.winner;
+    if (!w || w==='DRAW') return '';
+    return ((side==='home'&&w==='HOME_TEAM')||(side==='away'&&w==='AWAY_TEAM')) ? 'winner' : 'loser';
+}
+
+function matchCard(m) {
+    const {home,away,label,cls,liveClass} = matchStatus(m);
+    const scoreHtml = home!==null
+        ? `<span>${home}</span><span class="score-sep">–</span><span>${away}</span>`
+        : `<span style="color:#444;font-size:14px;font-weight:400">vs</span>`;
+    const grp = m.group ? `Grp ${m.group.replace('GROUP_','')}` : '';
+    const md  = m.matchday ? ` · MD${m.matchday}` : '';
+    const venue = m.venue ? ` · ${m.venue}` : '';
+    const isDone = m.status==='FINISHED'||m.status==='AWARDED';
+    return `
+    <div class="match-card ${liveClass} ${isDone?'finished':''}">
+        <div class="match-team">
+            <span class="team-flag">${flag(m.homeTeam.name)}</span>
+            <span class="team-name ${teamClass(m,'home')}">${m.homeTeam.shortName||m.homeTeam.name}</span>
+        </div>
+        <div class="match-center">
+            <div class="score-nums">${scoreHtml}</div>
+            <div class="match-status ${cls}">${label}</div>
+            <div class="match-meta">${grp}${md}${venue}</div>
+        </div>
+        <div class="match-team away">
+            <span class="team-flag">${flag(m.awayTeam.name)}</span>
+            <span class="team-name ${teamClass(m,'away')}">${m.awayTeam.shortName||m.awayTeam.name}</span>
+        </div>
+    </div>`;
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let allMatches = [];
+let activeFilter = 'ALL';
+
+// ── Filter bar ────────────────────────────────────────────────────────────────
+function buildFilterBar(matches) {
+    const stages = [...new Set(matches.map(m=>m.stage))];
+    stages.sort((a,b)=>STAGE_ORDER.indexOf(a)-STAGE_ORDER.indexOf(b));
+    const hasMultiple = stages.length > 1;
+
+    const buttons = [
+        hasMultiple ? `<button class="filter-btn ${activeFilter==='ALL'?'active':''}" data-filter="ALL">All</button>` : '',
+        ...stages.map(s =>
+            `<button class="filter-btn ${activeFilter===s?'active':''}" data-filter="${s}">${STAGE_LABEL[s]||s}</button>`
+        )
+    ].filter(Boolean).join('');
+
+    document.getElementById('filter-bar').innerHTML = buttons;
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            activeFilter = btn.dataset.filter;
+            buildFilterBar(allMatches);
+            renderSchedule();
+        });
+    });
+}
+
+// ── Schedule render ───────────────────────────────────────────────────────────
+function renderSchedule() {
+    const filtered = activeFilter === 'ALL'
+        ? allMatches
+        : allMatches.filter(m => m.stage === activeFilter);
+
+    if (!filtered.length) {
+        document.getElementById('schedule-body').innerHTML =
+            '<div class="error-msg">No matches for this filter.</div>';
+        return;
+    }
+
+    // Determine if this is a group-stage view or knockout view
+    const stages = [...new Set(filtered.map(m=>m.stage))];
+    const isGroupOnly = stages.every(s => s==='GROUP_STAGE');
+
+    let html = `<div class="match-count">${filtered.length} matches</div>`;
+
+    if (isGroupOnly) {
+        // Group stage: organise by date
+        const byDay = new Map();
+        for (const m of filtered) {
+            const d = localDateStr(m.utcDate);
+            if (!byDay.has(d)) byDay.set(d, []);
+            byDay.get(d).push(m);
+        }
+        const sortedDays = [...byDay.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+        for (const [, ms] of sortedDays) {
+            html += `<div class="day-header">
+                <div class="day-title">${fmtDayHeader(ms[0].utcDate)}</div>
+                <div class="day-sub">${ms.length} match${ms.length!==1?'es':''}</div>
+            </div>`;
+            html += ms.map(matchCard).join('');
+        }
+    } else {
+        // Knockout or mixed: organise by stage first, then date within stage
+        const byStage = new Map();
+        for (const m of filtered) {
+            if (!byStage.has(m.stage)) byStage.set(m.stage, []);
+            byStage.get(m.stage).push(m);
+        }
+        const sortedStages = [...byStage.entries()].sort(
+            (a,b)=>STAGE_ORDER.indexOf(a[0])-STAGE_ORDER.indexOf(b[0])
+        );
+        for (const [stage, ms] of sortedStages) {
+            html += `<div class="round-header"><div class="round-title">${STAGE_LABEL[stage]||stage}</div></div>`;
+            const byDay = new Map();
+            for (const m of ms) {
+                const d = localDateStr(m.utcDate);
+                if (!byDay.has(d)) byDay.set(d, []);
+                byDay.get(d).push(m);
+            }
+            const sortedDays = [...byDay.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+            for (const [, dayMs] of sortedDays) {
+                html += `<div class="day-header" style="margin-top:12px">
+                    <div class="day-title">${fmtDayHeader(dayMs[0].utcDate)}</div>
+                </div>`;
+                html += dayMs.map(matchCard).join('');
+            }
+        }
+    }
+
+    document.getElementById('schedule-body').innerHTML = html;
+
+    // Scroll to today
+    scrollToToday();
+}
+
+function scrollToToday() {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    // Find the first match card that is today or future and scroll to its section
+    const allCards = document.querySelectorAll('.match-card');
+    for (const card of allCards) {
+        // The day header before this card
+        let prev = card.previousElementSibling;
+        while (prev && !prev.classList.contains('day-header') && !prev.classList.contains('round-header')) {
+            prev = prev.previousElementSibling;
+        }
+        // Check the match's date from its meta
+        const meta = card.querySelector('.match-meta')?.textContent || '';
+        break; // We'll skip auto-scroll for now — too complex with dynamic rendering
+    }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+    try {
+        const data = await apiFetch('/competitions/WC/matches', 'wc_matches', 180000);
+        allMatches = (data.matches||[]).sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
+
+        if (!allMatches.length) {
+            document.getElementById('schedule-body').innerHTML =
+                '<div class="error-msg">No match data available yet.</div>';
+            return;
+        }
+
+        // Default filter: jump to current/most relevant stage
+        const liveOrUpcoming = allMatches.filter(m=>!['FINISHED','AWARDED'].includes(m.status));
+        if (liveOrUpcoming.length) {
+            const stages = [...new Set(liveOrUpcoming.map(m=>m.stage))];
+            const stagesPresent = [...new Set(allMatches.map(m=>m.stage))];
+            activeFilter = stagesPresent.length > 1 ? 'ALL' : stagesPresent[0];
+        }
+
+        buildFilterBar(allMatches);
+        renderSchedule();
+
+        document.getElementById('refresh-note').textContent =
+            `Updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+    } catch(e) {
+        const msg = e.message?.includes('401') ? 'Invalid API key.' : `Error: ${e.message}`;
+        document.getElementById('schedule-body').innerHTML = `<div class="error-msg">${msg}</div>`;
+    }
+}
+
+init();
+</script>
+</body>
+</html>

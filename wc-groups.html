@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Groups · 2026 World Cup</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d0d;color:#f2f2f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh}
+a{color:inherit;text-decoration:none}
+
+header{border-bottom:1px solid #252525;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#0d0d0d;z-index:100}
+.logo{font-size:14px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.logo em{color:#27AE60;font-style:normal}
+nav a{font-size:11px;font-weight:600;color:#555;margin-left:22px;text-transform:uppercase;letter-spacing:.08em;transition:color .15s}
+nav a:hover{color:#f2f2f2}
+nav a.active{color:#27AE60}
+
+main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
+.page-title{font-size:22px;font-weight:700;margin-bottom:4px}
+.page-sub{font-size:12px;color:#555;margin-bottom:24px}
+
+/* Key */
+.key{display:flex;align-items:center;gap:20px;margin-bottom:20px;flex-wrap:wrap}
+.key-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#777}
+.key-bar{width:10px;height:14px;border-radius:2px;flex-shrink:0}
+.key-bar.q1,.key-bar.q2{background:#27AE60}
+.key-bar.q3{background:#E8B84B}
+.key-bar.q4{background:#2a2a2a}
+
+/* Groups grid */
+.groups-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:900px){.groups-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){.groups-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:420px){.groups-grid{grid-template-columns:1fr}}
+
+/* Group card */
+.group-card{background:#161616;border:1px solid #252525;border-radius:12px;overflow:hidden}
+.group-header{padding:10px 14px 8px;border-bottom:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between}
+.group-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#888}
+.group-played{font-size:10px;color:#444}
+
+table.gt{width:100%;border-collapse:collapse}
+table.gt thead th{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#444;padding:5px 6px;text-align:center}
+table.gt thead th.th-team{text-align:left;padding-left:10px}
+table.gt tbody tr{border-top:1px solid #1a1a1a;transition:background .1s}
+table.gt tbody tr:hover{background:#1d1d1d}
+table.gt tbody td{padding:7px 6px;font-size:12px;text-align:center;color:#ccc}
+table.gt tbody td.td-team{text-align:left;padding-left:0}
+
+.team-cell{display:flex;align-items:center;gap:6px;padding:0 4px}
+.pos-bar{width:3px;height:28px;border-radius:2px;flex-shrink:0}
+.row-q1 .pos-bar,.row-q2 .pos-bar{background:#27AE60}
+.row-q3 .pos-bar{background:#E8B84B}
+.row-q4 .pos-bar{background:#222}
+
+.pos-num{font-size:10px;color:#444;width:12px;flex-shrink:0}
+.t-flag{font-size:16px;flex-shrink:0;line-height:1}
+.t-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-q1 .t-name,.row-q2 .t-name{color:#f2f2f2}
+.row-q3 .t-name{color:#ccc}
+.row-q4 .t-name{color:#888}
+
+.td-pts{font-weight:700;color:#E8B84B}
+.row-q1 .td-pts,.row-q2 .td-pts{color:#27AE60}
+.row-q4 .td-pts{color:#444}
+.gd-pos{color:#27AE60}
+.gd-neg{color:#e74c3c}
+
+/* Skel */
+.skel{background:linear-gradient(90deg,#1c1c1c 25%,#262626 50%,#1c1c1c 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.error-msg{background:#161616;border:1px solid #252525;border-radius:10px;padding:28px;text-align:center;color:#555;font-size:13px}
+.refresh-note{font-size:10px;color:#333;text-align:right;margin-top:16px}
+</style>
+</head>
+<body>
+<header>
+    <div class="logo">⚽ World Cup <em>2026</em> <span style="font-size:10px;font-weight:500;color:#444;margin-left:6px">v0.5</span></div>
+    <nav>
+        <a href="wc-dashboard.html">Today</a>
+        <a href="wc-groups.html" class="active">Groups</a>
+        <a href="wc-schedule.html">Schedule</a>
+    </nav>
+</header>
+
+<main>
+    <div class="page-title">Group Standings</div>
+    <div class="page-sub">Top 2 from each group advance automatically · Best 8 third-place teams also advance</div>
+
+    <div class="key">
+        <div class="key-item"><div class="key-bar q1"></div> Advances (automatic)</div>
+        <div class="key-item"><div class="key-bar q3"></div> Possible 3rd-place qualifier</div>
+        <div class="key-item"><div class="key-bar q4"></div> Eliminated</div>
+    </div>
+
+    <div id="groups-grid" class="groups-grid">
+        ${Array(12).fill(0).map(()=>`<div class="group-card"><div style="padding:12px"><div class="skel" style="height:130px"></div></div></div>`).join('')}
+    </div>
+    <div class="refresh-note" id="refresh-note"></div>
+</main>
+
+<script>
+const API_KEY = 'b200b024810649c195ad69436cdc1a62';
+const BASE    = 'https://api.football-data.org/v4';
+let _reqAvail = 10, _resetMs = 0;
+
+const FLAGS = {
+    'Argentina':'🇦🇷','Australia':'🇦🇺','Austria':'🇦🇹','Belgium':'🇧🇪',
+    'Bolivia':'🇧🇴','Brazil':'🇧🇷','Canada':'🇨🇦','Cameroon':'🇨🇲',
+    'Chile':'🇨🇱','Colombia':'🇨🇴','Costa Rica':'🇨🇷','Croatia':'🇭🇷',
+    'Cuba':'🇨🇺','Czech Republic':'🇨🇿','Czechia':'🇨🇿','Denmark':'🇩🇰',
+    'DR Congo':'🇨🇩','Congo DR':'🇨🇩','Ecuador':'🇪🇨','Egypt':'🇪🇬',
+    'El Salvador':'🇸🇻','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','France':'🇫🇷','Germany':'🇩🇪',
+    'Ghana':'🇬🇭','Greece':'🇬🇷','Honduras':'🇭🇳','Hungary':'🇭🇺',
+    'Indonesia':'🇮🇩','Iran':'🇮🇷','Iraq':'🇮🇶','Italy':'🇮🇹',
+    "Côte d'Ivoire":'🇨🇮','Ivory Coast':'🇨🇮','Jamaica':'🇯🇲','Japan':'🇯🇵',
+    'Jordan':'🇯🇴','Kenya':'🇰🇪','Mali':'🇲🇱','Mexico':'🇲🇽',
+    'Morocco':'🇲🇦','Netherlands':'🇳🇱','New Zealand':'🇳🇿','Nigeria':'🇳🇬',
+    'Norway':'🇳🇴','Panama':'🇵🇦','Paraguay':'🇵🇾','Peru':'🇵🇪',
+    'Poland':'🇵🇱','Portugal':'🇵🇹','Qatar':'🇶🇦','Romania':'🇷🇴',
+    'Saudi Arabia':'🇸🇦','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Senegal':'🇸🇳','Serbia':'🇷🇸',
+    'Slovakia':'🇸🇰','Slovenia':'🇸🇮','South Africa':'🇿🇦',
+    'Korea Republic':'🇰🇷','South Korea':'🇰🇷','Spain':'🇪🇸',
+    'Sweden':'🇸🇪','Switzerland':'🇨🇭','Trinidad and Tobago':'🇹🇹',
+    'Tunisia':'🇹🇳','Turkey':'🇹🇷','Türkiye':'🇹🇷','Ukraine':'🇺🇦',
+    'United States':'🇺🇸','USA':'🇺🇸','Uruguay':'🇺🇾','Uzbekistan':'🇺🇿',
+    'Venezuela':'🇻🇪','Wales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿',
+};
+const flag = n => FLAGS[n] || '🏳';
+
+function cacheGet(k) {
+    try {
+        const r = JSON.parse(localStorage.getItem(k)||'null');
+        if (!r || Date.now()-r.ts > r.ttl) return null;
+        return r.data;
+    } catch { return null; }
+}
+function cacheSet(k, data, ttl) {
+    try { localStorage.setItem(k, JSON.stringify({data,ts:Date.now(),ttl})); } catch {}
+}
+async function apiFetch(path, cacheKey, ttl=300000) {
+    const c = cacheKey ? cacheGet(cacheKey) : null;
+    if (c) return c;
+    if (_reqAvail <= 1 && _resetMs > Date.now())
+        await new Promise(r => setTimeout(r, _resetMs - Date.now() + 200));
+    const r = await fetch(`${BASE}${path}`, {headers:{'X-Auth-Token':API_KEY}});
+    const avail = r.headers.get('X-Requests-Available-Minute');
+    const reset = r.headers.get('X-RequestCounter-Reset');
+    if (avail !== null) _reqAvail = parseInt(avail, 10);
+    if (reset !== null) _resetMs  = Date.now() + parseInt(reset, 10) * 1000;
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    if (cacheKey) cacheSet(cacheKey, data, ttl);
+    return data;
+}
+
+function gdStr(n) {
+    if (n > 0) return `+${n}`;
+    if (n < 0) return `${n}`;
+    return '0';
+}
+function gdClass(n) {
+    return n > 0 ? 'gd-pos' : n < 0 ? 'gd-neg' : '';
+}
+function rowClass(i) {
+    return i===0?'row-q1': i===1?'row-q2': i===2?'row-q3':'row-q4';
+}
+
+function groupCardHtml(g) {
+    const letter = g.group.replace('GROUP_','');
+    const played = g.table.reduce((s,r)=>s+r.playedGames,0);
+    const maxGames = g.table.length * (g.table.length-1); // round-robin total
+
+    const rows = g.table.map((row, i) => {
+        const rc = rowClass(i);
+        const barCls = i<2?'q1-bar': i===2?'q3-bar':'q4-bar';
+        return `
+        <tr class="${rc}">
+            <td class="td-team">
+                <div class="team-cell">
+                    <div class="pos-bar"></div>
+                    <span class="pos-num">${row.position}</span>
+                    <span class="t-flag">${flag(row.team.name)}</span>
+                    <span class="t-name">${row.team.tla||row.team.shortName||row.team.name}</span>
+                </div>
+            </td>
+            <td>${row.playedGames}</td>
+            <td>${row.won}</td>
+            <td>${row.draw}</td>
+            <td>${row.lost}</td>
+            <td class="${gdClass(row.goalDifference)}">${gdStr(row.goalDifference)}</td>
+            <td class="td-pts">${row.points}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+    <div class="group-card">
+        <div class="group-header">
+            <span class="group-title">Group ${letter}</span>
+            <span class="group-played">${played} played</span>
+        </div>
+        <table class="gt">
+            <thead><tr>
+                <th class="th-team">Team</th>
+                <th title="Played">P</th><th title="Won">W</th>
+                <th title="Drawn">D</th><th title="Lost">L</th>
+                <th title="Goal difference">GD</th>
+                <th title="Points">Pts</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
+}
+
+async function init() {
+    try {
+        const data = await apiFetch('/competitions/WC/standings', 'wc_standings', 300000);
+        const groups = (data.standings||[])
+            .filter(s => s.type==='TOTAL' && s.stage==='GROUP_STAGE')
+            .sort((a,b) => a.group.localeCompare(b.group));
+
+        if (!groups.length) {
+            document.getElementById('groups-grid').innerHTML =
+                '<div class="error-msg" style="grid-column:1/-1">Group stage standings not yet available.</div>';
+            return;
+        }
+
+        document.getElementById('groups-grid').innerHTML = groups.map(groupCardHtml).join('');
+        document.getElementById('refresh-note').textContent =
+            `Updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+    } catch(e) {
+        const msg = e.message?.includes('401') ? 'Invalid API key.' : `Error: ${e.message}`;
+        document.getElementById('groups-grid').innerHTML =
+            `<div class="error-msg" style="grid-column:1/-1">${msg}</div>`;
+    }
+}
+
+init();
+</script>
+</body>
+</html>
