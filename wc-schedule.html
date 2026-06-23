@@ -40,7 +40,7 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 .match-card.live-card{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.04)}
 .match-card.finished-card{opacity:.85}
 .match-team{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
-.match-team.away{flex-direction:row-reverse;text-align:right}
+.match-team.away{justify-content:flex-end;text-align:right}
 
 /* Crest */
 .crest-wrap{flex-shrink:0;width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:#1e1e1e;border-radius:6px;overflow:hidden}
@@ -62,7 +62,7 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 .st-live{color:#22c55e}
 .st-ht{color:#f59e0b}
 .st-soon{color:#e0e0e0}
-.match-meta{font-size:10px;color:#2e2e2e;margin-top:2px}
+.match-meta{font-size:10px;color:#555;margin-top:2px}
 .live-dot{display:inline-block;width:6px;height:6px;background:#22c55e;border-radius:50%;margin-right:3px;animation:pulse 1.4s ease-in-out infinite;vertical-align:middle}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
 
@@ -142,15 +142,18 @@ function winCls(m,side){
 }
 
 function crest(team,sz=30){
-    if(!team?.crest)return`<div class="crest-wrap" style="width:${sz}px;height:${sz}px"><span class="crest-tla">${team?.tla||'?'}</span></div>`;
+    // team.name is null for undetermined knockout slots
+    if(!team?.name)return`<div class="crest-wrap" style="width:${sz}px;height:${sz}px"><span class="crest-tla">?</span></div>`;
+    if(!team.crest)return`<div class="crest-wrap" style="width:${sz}px;height:${sz}px"><span class="crest-tla">${team.tla||'?'}</span></div>`;
     return`<div class="crest-wrap" style="width:${sz}px;height:${sz}px"><img src="${team.crest}" width="${sz}" height="${sz}" alt="${team.tla||''}" onerror="this.style.display='none'"></div>`;
 }
 
 function matchCard(m){
     const{h,a,label,cls,live}=matchSt(m);
     const ht=m.homeTeam,at=m.awayTeam;
-    const htTxt=ht?`<span class="team-txt ${winCls(m,'home')}">${ht.shortName||ht.name}</span>`:`<span class="team-tbd">TBD</span>`;
-    const atTxt=at?`<span class="team-txt ${winCls(m,'away')}">${at.shortName||at.name}</span>`:`<span class="team-tbd">TBD</span>`;
+    // API returns {name:null,...} for undetermined knockout slots — check .name not just the object
+    const htTxt=ht?.name?`<span class="team-txt ${winCls(m,'home')}">${ht.shortName||ht.name}</span>`:`<span class="team-tbd">TBD</span>`;
+    const atTxt=at?.name?`<span class="team-txt ${winCls(m,'away')}">${at.shortName||at.name}</span>`:`<span class="team-tbd">TBD</span>`;
     const scoreHtml=h!==null?`<span>${h}</span><span class="score-sep">–</span><span>${a}</span>`:`<span class="score-vs">vs</span>`;
     const grpTxt=m.group?` · Grp ${m.group.replace('GROUP_','')}${m.matchday?` MD${m.matchday}`:''}`:m.matchday?` · MD${m.matchday}`:'';
     return`<div class="match-card ${live?'live-card':''} ${DONE_ST.has(m.status)?'finished-card':''}">

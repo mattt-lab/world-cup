@@ -31,19 +31,24 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 
 /* Match cards */
-.match-card{background:#151515;border:1px solid #1e1e1e;border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:10px;transition:border-color .15s}
+.match-card{background:#151515;border:1px solid #1e1e1e;border-radius:12px;padding:14px 16px;margin-bottom:4px;display:flex;align-items:center;gap:10px;transition:border-color .15s}
 .match-card:hover{border-color:#2a2a2a}
 .match-card.live-card{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.04)}
 .match-card.finished-card{opacity:.9}
+
+/* Home team: crest left, name right */
 .match-team{flex:1;display:flex;align-items:center;gap:9px;min-width:0}
-.match-team.away{flex-direction:row-reverse;text-align:right}
+/* Away team: name left, crest right — flags align on the outer edge */
+.match-team.away{justify-content:flex-end;text-align:right}
+
 .crest-wrap{flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#1e1e1e;border-radius:6px;overflow:hidden}
 .crest-wrap img{display:block;object-fit:contain}
 .crest-tla{font-size:8px;font-weight:700;color:#444;letter-spacing:.04em}
-.team-name-txt{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .15s}
+.team-name-txt{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .team-name-txt.winner{color:#f0f0f0;font-weight:700}
 .team-name-txt.loser{color:#444}
 .team-tbd{font-size:12px;color:#444;font-style:italic}
+
 .match-center{flex-shrink:0;text-align:center;min-width:90px}
 .score-nums{font-size:24px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:8px;line-height:1;letter-spacing:-.02em}
 .score-sep{color:#333;font-weight:300;font-size:20px}
@@ -53,31 +58,15 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 .st-live{color:#22c55e}
 .st-ht{color:#f59e0b}
 .st-soon{color:#f0f0f0}
-.match-meta{font-size:10px;color:#333;margin-top:2px;letter-spacing:.02em}
+.match-meta{font-size:10px;color:#555;margin-top:2px;letter-spacing:.02em}
+
+/* Blurb below each match */
+.match-blurb{font-size:11px;color:#666;line-height:1.55;padding:5px 6px 12px;font-style:italic}
 
 .day-header{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.08em;padding:5px 0 8px;margin-top:20px;border-bottom:1px solid #1a1a1a;margin-bottom:10px}
 .day-header:first-child{margin-top:0}
 
-/* Group snapshot */
-.groups-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-@media(max-width:680px){.groups-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:480px){.groups-grid{grid-template-columns:repeat(2,1fr)}}
-.group-mini{background:#151515;border:1px solid #1e1e1e;border-radius:10px;padding:10px 12px}
-.group-mini-title{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:8px}
-.mini-row{display:flex;align-items:center;gap:5px;padding:2px 0}
-.mini-bar{width:3px;height:20px;border-radius:2px;flex-shrink:0}
-.mini-row.q1 .mini-bar,.mini-row.q2 .mini-bar{background:#22c55e}
-.mini-row.q3 .mini-bar{background:#f59e0b}
-.mini-row.q4 .mini-bar{background:#222}
-.mini-crest{width:16px;height:16px;object-fit:contain;flex-shrink:0}
-.mini-name{flex:1;font-size:11px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mini-row.q1 .mini-name,.mini-row.q2 .mini-name{color:#e0e0e0}
-.mini-pts{font-size:11px;font-weight:700;flex-shrink:0}
-.mini-row.q1 .mini-pts,.mini-row.q2 .mini-pts{color:#22c55e}
-.mini-row.q3 .mini-pts{color:#f59e0b}
-.mini-row.q4 .mini-pts{color:#333}
-
-/* Skeleton */
+/* Skel */
 .skel{background:linear-gradient(90deg,#181818 25%,#222 50%,#181818 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .error-msg{background:#151515;border:1px solid #1e1e1e;border-radius:10px;padding:24px;text-align:center;color:#444;font-size:13px}
@@ -104,25 +93,17 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
     </div>
 
     <div id="live-section"></div>
-
     <div id="today-section">
         <div class="section-label">Matches</div>
         <div class="match-card"><div class="skel" style="height:54px;width:100%"></div></div>
         <div class="match-card"><div class="skel" style="height:54px;width:100%"></div></div>
         <div class="match-card"><div class="skel" style="height:54px;width:100%"></div></div>
     </div>
-
-    <div style="margin-top:28px">
-        <div class="section-label">Group Standings</div>
-        <div id="groups-section" class="groups-grid">
-            ${Array(12).fill('<div class="group-mini"><div class="skel" style="height:96px"></div></div>').join('')}
-        </div>
-    </div>
     <div class="refresh-note" id="refresh-note"></div>
 </main>
 
 <script>
-// ── Stage constants (corrected to match football-data.org API) ───────────────
+// ── Stage constants ───────────────────────────────────────────────────────────
 const STAGE_LABEL = {
     GROUP_STAGE:'Group Stage', LAST_32:'Round of 32', LAST_16:'Round of 16',
     QUARTER_FINALS:'Quarterfinals', SEMI_FINALS:'Semifinals',
@@ -136,7 +117,6 @@ const SCHED_ST = new Set(['TIMED','SCHEDULED']);
 // ── Cache ────────────────────────────────────────────────────────────────────
 function cacheGet(k){try{const r=JSON.parse(localStorage.getItem(k)||'null');return r&&Date.now()-r.ts<r.ttl?r.data:null}catch{return null}}
 function cacheSet(k,d,ttl){try{localStorage.setItem(k,JSON.stringify({data:d,ts:Date.now(),ttl}))}catch{}}
-
 async function loadJson(file,key,ttl=120000){
     const c=cacheGet(key);if(c)return c;
     const r=await fetch(`data/${file}?_=${Date.now()}`);
@@ -146,12 +126,12 @@ async function loadJson(file,key,ttl=120000){
 const getMatches   = ()=>loadJson('matches.json','wc_matches',120000);
 const getStandings = ()=>loadJson('standings.json','wc_standings',120000);
 
-// ── Team crest helper ────────────────────────────────────────────────────────
+// ── Crest helper ─────────────────────────────────────────────────────────────
 function crest(team, sz=34){
-    if(!team?.crest) return `<div class="crest-wrap" style="width:${sz}px;height:${sz}px"><span class="crest-tla">${team?.tla||'?'}</span></div>`;
+    const url = team?.crest, tla = team?.tla||'?';
+    if(!url) return `<div class="crest-wrap" style="width:${sz}px;height:${sz}px"><span class="crest-tla">${tla}</span></div>`;
     return `<div class="crest-wrap" style="width:${sz}px;height:${sz}px">
-        <img src="${team.crest}" width="${sz}" height="${sz}" alt="${team.tla||''}"
-             onerror="this.style.display='none'">
+        <img src="${url}" width="${sz}" height="${sz}" alt="${tla}" onerror="this.style.display='none'">
     </div>`;
 }
 
@@ -175,16 +155,19 @@ function winClass(m,side){
     return((side==='home'&&w==='HOME_TEAM')||(side==='away'&&w==='AWAY_TEAM'))?'winner':'loser';
 }
 
-// ── Match card HTML ──────────────────────────────────────────────────────────
-function matchCard(m){
+// ── Match card HTML ───────────────────────────────────────────────────────────
+// blurb is an optional string to show beneath the card
+function matchCard(m, blurb){
     const{h,a,label,cls,live}=matchSt(m);
     const ht=m.homeTeam, at=m.awayTeam;
-    const htName=ht?`<span class="team-name-txt ${winClass(m,'home')}">${ht.shortName||ht.name}</span>`:`<span class="team-tbd">TBD</span>`;
-    const atName=at?`<span class="team-name-txt ${winClass(m,'away')}">${at.shortName||at.name}</span>`:`<span class="team-tbd">TBD</span>`;
+    // Guard: API returns {name:null,...} for undetermined knockout slots
+    const htName=ht?.name?`<span class="team-name-txt ${winClass(m,'home')}">${ht.shortName||ht.name}</span>`:`<span class="team-tbd">TBD</span>`;
+    const atName=at?.name?`<span class="team-name-txt ${winClass(m,'away')}">${at.shortName||at.name}</span>`:`<span class="team-tbd">TBD</span>`;
     const scoreHtml=h!==null?`<span>${h}</span><span class="score-sep">–</span><span>${a}</span>`:`<span class="score-vs">vs</span>`;
     const grp=m.group?`Grp ${m.group.replace('GROUP_','')} · `:'';
     const lbl=STAGE_LABEL[m.stage]||m.stage;
     const md=m.matchday?` MD${m.matchday}`:'';
+    const blurbHtml=blurb?`<div class="match-blurb">${blurb}</div>`:'';
     return`<div class="match-card ${live?'live-card':''} ${DONE_ST.has(m.status)?'finished-card':''}">
         <div class="match-team">${crest(ht)}${htName}</div>
         <div class="match-center">
@@ -193,12 +176,11 @@ function matchCard(m){
             <div class="match-meta">${grp}${lbl}${md}</div>
         </div>
         <div class="match-team away">${atName}${crest(at)}</div>
-    </div>`;
+    </div>${blurbHtml}`;
 }
 
-// ── Phase detection ──────────────────────────────────────────────────────────
+// ── Phase detection ───────────────────────────────────────────────────────────
 function detectPhase(matches){
-    // Base on stages that have actually been played/are live — not future TIMED matches
     const started=new Set(matches.filter(m=>DONE_ST.has(m.status)||LIVE_ST.has(m.status)).map(m=>m.stage));
     for(const s of [...STAGE_ORDER].reverse())if(started.has(s))return s;
     for(const s of STAGE_ORDER)if(matches.some(m=>m.stage===s))return s;
@@ -210,7 +192,68 @@ function detectMatchday(matches,stage){
     return played.length?Math.max(...played):1;
 }
 
-// ── Render: phase banner ─────────────────────────────────────────────────────
+// ── Match blurb (computed from standings) ────────────────────────────────────
+function computeBlurb(match, standingsArr){
+    if(match.stage!=='GROUP_STAGE')return'';
+    if(!match.homeTeam?.name||!match.awayTeam?.name)return'';
+    // Standings use "Group A" format; matches use "GROUP_A"
+    const grpLabel=match.group?.replace('GROUP_','Group ');
+    const grp=(standingsArr||[]).find(s=>s.group===grpLabel);
+    if(!grp)return'';
+    const htRow=grp.table.find(r=>r.team.id===match.homeTeam.id);
+    const atRow=grp.table.find(r=>r.team.id===match.awayTeam.id);
+    if(!htRow||!atRow)return'';
+
+    const hn=match.homeTeam.shortName||match.homeTeam.name;
+    const an=match.awayTeam.shortName||match.awayTeam.name;
+    const hp=htRow.points, ap=atRow.points;
+    const hpos=htRow.position, apos=atRow.position;
+    const md=match.matchday||1;
+    const grpLetter=grpLabel?.replace('Group ','');
+
+    // Already finished — report the result
+    if(DONE_ST.has(match.status)){
+        const w=match.score?.winner;
+        const winner=w==='HOME_TEAM'?hn:w==='AWAY_TEAM'?an:null;
+        if(!winner)return`Full time — a draw in Group ${grpLetter}.`;
+        return`${winner} take three points in Group ${grpLetter}.`;
+    }
+
+    if(md===1){
+        return`Opening game in Group ${grpLetter}. Both sides looking to get off to a strong start — a win here sets the tone for the group stage.`;
+    }
+
+    if(md===2){
+        if(hp===3&&ap===3) return`Both ${hn} and ${an} won their openers and come in level on points. Whoever wins leads Group ${grpLetter} heading into the final matchday.`;
+        if(hp===3&&ap===0) return`${hn} come in off a win while ${an} lost their opener. A second defeat could effectively end ${an}'s World Cup before the final matchday.`;
+        if(hp===0&&ap===3) return`${an} are flying after a big opening win; ${hn} are under the cosh after a defeat. ${hn} cannot afford to lose again.`;
+        if(hp===1&&ap===1) return`Both sides drew their openers. A win here moves either team into serious contention — a draw keeps things very tight heading into matchday 3.`;
+        if(hp===3&&ap===1) return`${hn} come in with maximum points while ${an} drew their opener. A win for ${an} would set up a fascinating final matchday.`;
+        if(hp===1&&ap===3) return`${an} lead with a win while ${hn} drew their opener. ${hn} need a result here to keep their qualification hopes in their own hands.`;
+        if(hp===0&&ap===0) return`Both teams lost their openers — this is already a must-win situation. The loser here is all but eliminated from the group stage.`;
+        if(hp===0&&ap===1) return`${hn} are in trouble after matchday 1. Only a win will do for ${hn}; ${an} just need to avoid losing to stay safe.`;
+        if(hp===1&&ap===0) return`${an} are in trouble after matchday 1. Only a win will do for ${an}; ${hn} just need to avoid losing to stay safe.`;
+    }
+
+    if(md===3){
+        if(hp>=6) return`${hn} are already through to the knockout stage. They may rest key players for the Round of 32 — ${an} will be hoping to catch them on the back foot.`;
+        if(ap>=6) return`${an} are already through to the knockout stage. They may rotate their squad — ${hn} will look to take advantage.`;
+        if(hp>=4&&ap>=4) return`Both sides can seal their spot with a draw. A tense, potentially tactical affair in Group ${grpLetter}.`;
+        if(hp>=4&&ap<=1) return`${hn} need only a draw to advance. ${an} need a win — and results elsewhere to go their way — to have any hope.`;
+        if(hp<=1&&ap>=4) return`${an} need only a draw to advance. ${hn} need a win — and results elsewhere to go their way — to have any hope.`;
+        if(hp>=4) return`${hn} need only a draw to guarantee their place in the Round of 32. A draw might suit ${an} too — but only if other results go their way.`;
+        if(ap>=4) return`${an} need only a draw to guarantee their place in the Round of 32. A draw might suit ${hn} too — but only if other results go their way.`;
+        if(hp===3&&ap===3) return`Everything to play for in Group ${grpLetter}. Both ${hn} and ${an} need a win to be sure of advancing, though a draw could still be enough depending on the other game.`;
+        if(hp===3&&ap===0) return`${hn} have it in their own hands while ${an} are all but eliminated. ${an} need a win, a big swing in goal difference, and other results to go their way.`;
+        if(hp===0&&ap===3) return`${an} have it in their own hands while ${hn} are all but eliminated. ${hn} need a win, a big swing in goal difference, and other results to go their way.`;
+        if(hp===0&&ap===0) return`Neither ${hn} nor ${an} have a point so far. The winner here can still make a case for being one of the best third-place teams — both need maximum points.`;
+        return`Final matchday in Group ${grpLetter}. ${hn} (${hp} pts) vs ${an} (${ap} pts) — both sides know exactly what they need.`;
+    }
+
+    return'';
+}
+
+// ── Render: phase banner ──────────────────────────────────────────────────────
 function renderPhase(matches){
     const stage=detectPhase(matches);
     const md=detectMatchday(matches,stage);
@@ -228,14 +271,14 @@ function renderPhase(matches){
     </div>`;
 }
 
-// ── Render: matches ──────────────────────────────────────────────────────────
+// ── Render: matches ───────────────────────────────────────────────────────────
 function groupByDay(ms){
     const map=new Map();
     for(const m of ms){const d=localDay(m.utcDate);if(!map.has(d))map.set(d,[]);map.get(d).push(m);}
     return[...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
 }
 
-function renderMatches(matches){
+function renderMatches(matches, standingsArr){
     const today=todayDay();
     const live=matches.filter(m=>LIVE_ST.has(m.status));
     const todayMs=matches.filter(m=>localDay(m.utcDate)===today);
@@ -244,7 +287,7 @@ function renderMatches(matches){
     if(live.length){
         document.getElementById('live-section').innerHTML=
             `<div class="section-label" style="color:#22c55e;margin-bottom:10px"><span class="live-dot" style="display:inline-block;margin-right:5px"></span>Live Now</div>`+
-            live.map(matchCard).join('')+`<div style="height:20px"></div>`;
+            live.map(m=>matchCard(m, computeBlurb(m, standingsArr))).join('')+`<div style="height:20px"></div>`;
     } else {
         document.getElementById('live-section').innerHTML='';
     }
@@ -255,7 +298,7 @@ function renderMatches(matches){
     if(todayMs.length){
         el.innerHTML=`<div class="section-label">Today's Matches</div>
             <div class="day-header">${fmtDay(todayMs[0].utcDate)}</div>`+
-            nonLive.map(matchCard).join('');
+            nonLive.map(m=>matchCard(m, computeBlurb(m, standingsArr))).join('');
         return;
     }
 
@@ -266,49 +309,19 @@ function renderMatches(matches){
     if(recent.length){
         html+=`<div class="section-label">Recent Results</div>`;
         for(const[,ms] of groupByDay(recent.slice(0,12)).slice(0,2)){
-            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(matchCard).join('');
+            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(m=>matchCard(m, computeBlurb(m, standingsArr))).join('');
         }
     }
     if(upcoming.length){
         html+=`<div class="section-label" style="margin-top:${recent.length?'28px':'0'}">Coming Up</div>`;
         for(const[,ms] of groupByDay(upcoming.slice(0,12)).slice(0,2)){
-            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(matchCard).join('');
+            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(m=>matchCard(m, computeBlurb(m, standingsArr))).join('');
         }
     }
     el.innerHTML=html||'<div class="error-msg">No matches found.</div>';
 }
 
-// ── Render: group snapshot ───────────────────────────────────────────────────
-function renderGroupSnapshot(standings){
-    // API returns stage:'ALL' type:'TOTAL' — one entry per group
-    const groups=standings.filter(s=>s.type==='TOTAL').sort((a,b)=>a.group.localeCompare(b.group));
-    if(!groups.length){
-        document.getElementById('groups-section').innerHTML=
-            '<div class="error-msg" style="grid-column:1/-1">Standings not yet available.</div>';
-        return;
-    }
-    const html=groups.map(g=>{
-        const letter=g.group.replace('Group ','');
-        const rows=g.table.slice(0,4).map((row,i)=>{
-            const qc=i===0?'q1':i===1?'q2':i===2?'q3':'q4';
-            const imgHtml=row.team.crest
-                ?`<img class="mini-crest" src="${row.team.crest}" alt="${row.team.tla}" onerror="this.style.display='none'">`
-                :'';
-            return`<div class="mini-row ${qc}">
-                <div class="mini-bar"></div>
-                ${imgHtml}
-                <span class="mini-name">${row.team.tla}</span>
-                <span class="mini-pts">${row.points}</span>
-            </div>`;
-        }).join('');
-        return`<div class="group-mini">
-            <div class="group-mini-title">Group ${letter}</div>${rows}
-        </div>`;
-    }).join('');
-    document.getElementById('groups-section').innerHTML=html;
-}
-
-// ── Auto-refresh ─────────────────────────────────────────────────────────────
+// ── Auto-refresh ──────────────────────────────────────────────────────────────
 let _timer=null;
 function scheduleRefresh(matches){
     clearInterval(_timer);
@@ -324,10 +337,11 @@ function scheduleRefresh(matches){
 async function init(){
     try{
         const[md,sd]=await Promise.all([getMatches(),getStandings()]);
-        const matches=md.matches||[], standings=sd.standings||[];
+        const matches=md.matches||[];
+        // Standings: filter to TOTAL entries for group lookup
+        const standingsArr=(sd.standings||[]).filter(s=>s.type==='TOTAL');
         renderPhase(matches);
-        renderMatches(matches);
-        renderGroupSnapshot(standings);
+        renderMatches(matches, standingsArr);
         scheduleRefresh(matches);
         const upd=md._meta?.updated||sd._meta?.updated;
         document.getElementById('refresh-note').textContent=upd
@@ -337,7 +351,7 @@ async function init(){
         const msg=e.message?.includes('404')?'Data not yet available — workflow may still be running.':
                   e.message?.includes('401')?'Invalid API key.':
                   `Error loading data: ${e.message}`;
-        ['phase-section','today-section','groups-section'].forEach(id=>{
+        ['phase-section','today-section'].forEach(id=>{
             document.getElementById(id).innerHTML=`<div class="error-msg">${msg}</div>`;
         });
     }
