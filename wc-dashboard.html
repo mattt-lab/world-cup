@@ -7,81 +7,86 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:#0d0d0d;color:#f2f2f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh}
+body{background:#0b0b0b;color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh}
 a{color:inherit;text-decoration:none}
 
-/* Header */
-header{border-bottom:1px solid #252525;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#0d0d0d;z-index:100}
-.logo{font-size:14px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
-.logo em{color:#27AE60;font-style:normal}
-nav a{font-size:11px;font-weight:600;color:#555;margin-left:22px;text-transform:uppercase;letter-spacing:.08em;transition:color .15s}
-nav a:hover{color:#f2f2f2}
-nav a.active{color:#27AE60}
+header{border-bottom:1px solid #1e1e1e;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#0b0b0b;z-index:100}
+.logo{font-size:14px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.logo em{color:#22c55e;font-style:normal}
+.logo-ver{font-size:10px;font-weight:400;color:#333}
+nav a{font-size:11px;font-weight:600;color:#444;margin-left:22px;text-transform:uppercase;letter-spacing:.08em;transition:color .15s}
+nav a:hover{color:#f0f0f0}
+nav a.active{color:#22c55e}
 
-/* Layout */
-main{max-width:860px;margin:0 auto;padding:24px 16px 60px}
-.section-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-bottom:10px}
+main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
+.section-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:10px}
 
 /* Phase banner */
-.phase-banner{background:#161616;border:1px solid #252525;border-radius:12px;padding:18px 22px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.phase-chip{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#27AE60;border:1px solid #27AE60;border-radius:20px;padding:3px 10px;margin-bottom:6px}
-.phase-title{font-size:18px;font-weight:700}
-.phase-sub{font-size:12px;color:#777;margin-top:3px}
-.phase-right{text-align:right;color:#555;font-size:12px;flex-shrink:0}
+.phase-banner{background:linear-gradient(135deg,#151515,#181818);border:1px solid #222;border-radius:14px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.phase-chip{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#22c55e;border:1px solid rgba(34,197,94,.35);border-radius:20px;padding:3px 10px;margin-bottom:8px}
+.phase-title{font-size:20px;font-weight:800;letter-spacing:-.01em}
+.phase-sub{font-size:12px;color:#666;margin-top:3px}
+.live-count{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#22c55e}
+.live-dot{width:8px;height:8px;background:#22c55e;border-radius:50%;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 
 /* Match cards */
-.match-card{background:#161616;border:1px solid #252525;border-radius:10px;padding:13px 16px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
-.match-card.live{border-color:#1d5c2e;background:#111814}
-.match-team{flex:1;display:flex;align-items:center;gap:7px;min-width:0}
+.match-card{background:#151515;border:1px solid #1e1e1e;border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:10px;transition:border-color .15s}
+.match-card:hover{border-color:#2a2a2a}
+.match-card.live-card{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.04)}
+.match-card.finished-card{opacity:.9}
+.match-team{flex:1;display:flex;align-items:center;gap:9px;min-width:0}
 .match-team.away{flex-direction:row-reverse;text-align:right}
-.team-flag{font-size:20px;flex-shrink:0;line-height:1}
-.team-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.team-name.winner{color:#f2f2f2}
-.team-name.loser{color:#666}
-.match-center{flex-shrink:0;text-align:center;min-width:88px}
-.score-nums{font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:7px;line-height:1}
-.score-sep{color:#444;font-weight:300;font-size:18px}
+.crest-wrap{flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#1e1e1e;border-radius:6px;overflow:hidden}
+.crest-wrap img{display:block;object-fit:contain}
+.crest-tla{font-size:8px;font-weight:700;color:#444;letter-spacing:.04em}
+.team-name-txt{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .15s}
+.team-name-txt.winner{color:#f0f0f0;font-weight:700}
+.team-name-txt.loser{color:#444}
+.team-tbd{font-size:12px;color:#444;font-style:italic}
+.match-center{flex-shrink:0;text-align:center;min-width:90px}
+.score-nums{font-size:24px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:8px;line-height:1;letter-spacing:-.02em}
+.score-sep{color:#333;font-weight:300;font-size:20px}
+.score-vs{font-size:13px;color:#333;font-weight:400}
 .match-status{font-size:11px;font-weight:600;margin-top:4px}
-.st-ft{color:#555}
-.st-live{color:#27AE60}
-.st-ht{color:#E8B84B}
-.st-soon{color:#f2f2f2}
-.match-meta{font-size:10px;color:#444;margin-top:2px}
+.st-ft{color:#444}
+.st-live{color:#22c55e}
+.st-ht{color:#f59e0b}
+.st-soon{color:#f0f0f0}
+.match-meta{font-size:10px;color:#333;margin-top:2px;letter-spacing:.02em}
 
-/* Day header */
-.day-header{font-size:11px;font-weight:700;color:#777;text-transform:uppercase;letter-spacing:.08em;padding:6px 0 8px;margin-top:20px;border-bottom:1px solid #1e1e1e;margin-bottom:10px}
+.day-header{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.08em;padding:5px 0 8px;margin-top:20px;border-bottom:1px solid #1a1a1a;margin-bottom:10px}
 .day-header:first-child{margin-top:0}
 
 /* Group snapshot */
 .groups-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 @media(max-width:680px){.groups-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:480px){.groups-grid{grid-template-columns:repeat(2,1fr)}}
-.group-mini{background:#161616;border:1px solid #252525;border-radius:10px;padding:11px 12px}
-.group-mini-title{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:7px}
-.mini-row{display:flex;align-items:center;gap:5px;padding:2px 0;font-size:12px}
-.mini-pos{width:12px;font-size:10px;color:#444;flex-shrink:0}
-.mini-flag{font-size:13px;flex-shrink:0}
-.mini-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#ccc}
+.group-mini{background:#151515;border:1px solid #1e1e1e;border-radius:10px;padding:10px 12px}
+.group-mini-title{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:8px}
+.mini-row{display:flex;align-items:center;gap:5px;padding:2px 0}
+.mini-bar{width:3px;height:20px;border-radius:2px;flex-shrink:0}
+.mini-row.q1 .mini-bar,.mini-row.q2 .mini-bar{background:#22c55e}
+.mini-row.q3 .mini-bar{background:#f59e0b}
+.mini-row.q4 .mini-bar{background:#222}
+.mini-crest{width:16px;height:16px;object-fit:contain;flex-shrink:0}
+.mini-name{flex:1;font-size:11px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-row.q1 .mini-name,.mini-row.q2 .mini-name{color:#e0e0e0}
 .mini-pts{font-size:11px;font-weight:700;flex-shrink:0}
-.mini-bar{width:3px;height:13px;border-radius:2px;flex-shrink:0}
-.mini-row.q1 .mini-bar,.mini-row.q2 .mini-bar{background:#27AE60}
-.mini-row.q1 .mini-pts,.mini-row.q2 .mini-pts{color:#27AE60}
-.mini-row.q3 .mini-bar{background:#E8B84B}
-.mini-row.q3 .mini-pts{color:#E8B84B}
-.mini-row.q4 .mini-bar{background:#2a2a2a}
-.mini-row.q4 .mini-pts{color:#444}
+.mini-row.q1 .mini-pts,.mini-row.q2 .mini-pts{color:#22c55e}
+.mini-row.q3 .mini-pts{color:#f59e0b}
+.mini-row.q4 .mini-pts{color:#333}
 
 /* Skeleton */
-.skel{background:linear-gradient(90deg,#1c1c1c 25%,#262626 50%,#1c1c1c 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
+.skel{background:linear-gradient(90deg,#181818 25%,#222 50%,#181818 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-.error-msg{background:#161616;border:1px solid #252525;border-radius:10px;padding:28px;text-align:center;color:#555;font-size:13px}
-.refresh-note{font-size:10px;color:#444;text-align:right;margin-top:12px}
+.error-msg{background:#151515;border:1px solid #1e1e1e;border-radius:10px;padding:24px;text-align:center;color:#444;font-size:13px}
+.refresh-note{font-size:10px;color:#2a2a2a;text-align:right;margin-top:14px}
 </style>
 </head>
 <body>
 <header>
-    <div class="logo">⚽ World Cup <em>2026</em> <span style="font-size:10px;font-weight:500;color:#444;margin-left:6px">v0.5</span></div>
+    <div class="logo">⚽ World Cup <em>2026</em> <span class="logo-ver">v0.5</span></div>
     <nav>
         <a href="wc-dashboard.html" class="active">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -92,11 +97,9 @@ main{max-width:860px;margin:0 auto;padding:24px 16px 60px}
 <main>
     <div id="phase-section">
         <div class="phase-banner">
-            <div class="phase-left">
-                <div class="skel" style="height:16px;width:110px;margin-bottom:8px"></div>
-                <div class="skel" style="height:22px;width:180px;margin-bottom:6px"></div>
-                <div class="skel" style="height:14px;width:140px"></div>
-            </div>
+            <div><div class="skel" style="height:16px;width:130px;margin-bottom:10px"></div>
+            <div class="skel" style="height:22px;width:200px;margin-bottom:6px"></div>
+            <div class="skel" style="height:14px;width:120px"></div></div>
         </div>
     </div>
 
@@ -104,312 +107,241 @@ main{max-width:860px;margin:0 auto;padding:24px 16px 60px}
 
     <div id="today-section">
         <div class="section-label">Matches</div>
-        <div class="match-card"><div class="skel" style="height:52px;width:100%"></div></div>
-        <div class="match-card"><div class="skel" style="height:52px;width:100%"></div></div>
-        <div class="match-card"><div class="skel" style="height:52px;width:100%"></div></div>
+        <div class="match-card"><div class="skel" style="height:54px;width:100%"></div></div>
+        <div class="match-card"><div class="skel" style="height:54px;width:100%"></div></div>
+        <div class="match-card"><div class="skel" style="height:54px;width:100%"></div></div>
     </div>
 
     <div style="margin-top:28px">
         <div class="section-label">Group Standings</div>
         <div id="groups-section" class="groups-grid">
-            ${Array(12).fill('<div class="group-mini"><div class="skel" style="height:90px"></div></div>').join('')}
+            ${Array(12).fill('<div class="group-mini"><div class="skel" style="height:96px"></div></div>').join('')}
         </div>
     </div>
-
     <div class="refresh-note" id="refresh-note"></div>
 </main>
 
 <script>
-// ── Config — data served from local JSON, no API key needed client-side ──────
-const DATA = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-    ? ''   // relative path works for local server
-    : '';  // also relative on GitHub Pages
-
-// ── Flag emoji lookup ────────────────────────────────────────────────────────
-const FLAGS = {
-    'Argentina':'🇦🇷','Australia':'🇦🇺','Austria':'🇦🇹','Belgium':'🇧🇪',
-    'Bolivia':'🇧🇴','Brazil':'🇧🇷','Canada':'🇨🇦','Cameroon':'🇨🇲',
-    'Chile':'🇨🇱','Colombia':'🇨🇴','Costa Rica':'🇨🇷','Croatia':'🇭🇷',
-    'Cuba':'🇨🇺','Czech Republic':'🇨🇿','Czechia':'🇨🇿','Denmark':'🇩🇰',
-    'DR Congo':'🇨🇩',"Congo DR":'🇨🇩','Ecuador':'🇪🇨','Egypt':'🇪🇬',
-    'El Salvador':'🇸🇻','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','France':'🇫🇷','Germany':'🇩🇪',
-    'Ghana':'🇬🇭','Greece':'🇬🇷','Honduras':'🇭🇳','Hungary':'🇭🇺',
-    'Indonesia':'🇮🇩','Iran':'🇮🇷','Iraq':'🇮🇶','Italy':'🇮🇹',
-    "Côte d'Ivoire":'🇨🇮','Ivory Coast':'🇨🇮','Jamaica':'🇯🇲','Japan':'🇯🇵',
-    'Jordan':'🇯🇴','Kenya':'🇰🇪','Mali':'🇲🇱','Mexico':'🇲🇽',
-    'Morocco':'🇲🇦','Netherlands':'🇳🇱','New Zealand':'🇳🇿','Nigeria':'🇳🇬',
-    'Norway':'🇳🇴','Panama':'🇵🇦','Paraguay':'🇵🇾','Peru':'🇵🇪',
-    'Poland':'🇵🇱','Portugal':'🇵🇹','Qatar':'🇶🇦','Romania':'🇷🇴',
-    'Saudi Arabia':'🇸🇦','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Senegal':'🇸🇳','Serbia':'🇷🇸',
-    'Slovakia':'🇸🇰','Slovenia':'🇸🇮','South Africa':'🇿🇦',
-    'Korea Republic':'🇰🇷','South Korea':'🇰🇷','Spain':'🇪🇸',
-    'Sweden':'🇸🇪','Switzerland':'🇨🇭','Trinidad and Tobago':'🇹🇹',
-    'Tunisia':'🇹🇳','Turkey':'🇹🇷','Türkiye':'🇹🇷','Ukraine':'🇺🇦',
-    'United States':'🇺🇸','USA':'🇺🇸','Uruguay':'🇺🇾','Uzbekistan':'🇺🇿',
-    'Venezuela':'🇻🇪','Wales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿',
-};
-const flag = n => FLAGS[n] || '🏳';
-
-// ── Stage labels ─────────────────────────────────────────────────────────────
+// ── Stage constants (corrected to match football-data.org API) ───────────────
 const STAGE_LABEL = {
-    GROUP_STAGE:'Group Stage', ROUND_OF_32:'Round of 32',
-    ROUND_OF_16:'Round of 16', QUARTER_FINALS:'Quarterfinals',
-    SEMI_FINALS:'Semifinals',  THIRD_PLACE:'3rd Place',  FINAL:'Final',
+    GROUP_STAGE:'Group Stage', LAST_32:'Round of 32', LAST_16:'Round of 16',
+    QUARTER_FINALS:'Quarterfinals', SEMI_FINALS:'Semifinals',
+    THIRD_PLACE:'3rd Place Playoff', FINAL:'Final',
 };
-const STAGE_ORDER = ['GROUP_STAGE','ROUND_OF_32','ROUND_OF_16','QUARTER_FINALS','SEMI_FINALS','THIRD_PLACE','FINAL'];
+const STAGE_ORDER = ['GROUP_STAGE','LAST_32','LAST_16','QUARTER_FINALS','SEMI_FINALS','THIRD_PLACE','FINAL'];
+const LIVE_ST  = new Set(['LIVE','IN_PLAY','PAUSED']);
+const DONE_ST  = new Set(['FINISHED','AWARDED']);
+const SCHED_ST = new Set(['TIMED','SCHEDULED']);
 
-// ── LocalStorage cache ───────────────────────────────────────────────────────
-function cacheGet(k) {
-    try {
-        const r = JSON.parse(localStorage.getItem(k)||'null');
-        if (!r || Date.now() - r.ts > r.ttl) return null;
-        return r.data;
-    } catch { return null; }
-}
-function cacheSet(k, data, ttl) {
-    try { localStorage.setItem(k, JSON.stringify({data, ts:Date.now(), ttl})); } catch {}
-}
+// ── Cache ────────────────────────────────────────────────────────────────────
+function cacheGet(k){try{const r=JSON.parse(localStorage.getItem(k)||'null');return r&&Date.now()-r.ts<r.ttl?r.data:null}catch{return null}}
+function cacheSet(k,d,ttl){try{localStorage.setItem(k,JSON.stringify({data:d,ts:Date.now(),ttl}))}catch{}}
 
-// ── Data fetch — reads static JSON committed by GitHub Actions ────────────────
-async function loadJson(file, cacheKey, ttl) {
-    const cached = cacheGet(cacheKey);
-    if (cached) return cached;
-    const r = await fetch(`data/${file}?_=${Date.now()}`);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    cacheSet(cacheKey, data, ttl);
-    return data;
+async function loadJson(file,key,ttl=120000){
+    const c=cacheGet(key);if(c)return c;
+    const r=await fetch(`data/${file}?_=${Date.now()}`);
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const d=await r.json();cacheSet(key,d,ttl);return d;
 }
-const getMatches   = () => loadJson('matches.json',   'wc_matches',   120000);
-const getStandings = () => loadJson('standings.json', 'wc_standings', 120000);
+const getMatches   = ()=>loadJson('matches.json','wc_matches',120000);
+const getStandings = ()=>loadJson('standings.json','wc_standings',120000);
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function fmtDateHeader(utcStr) {
-    return new Date(utcStr).toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
-}
-function fmtTime(utcStr) {
-    return new Date(utcStr).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
-}
-function fmtUpdated(d) {
-    return d.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
-}
-function localDateStr(utcStr) {
-    const d = new Date(utcStr);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function todayStr() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+// ── Team crest helper ────────────────────────────────────────────────────────
+function crest(team, sz=34){
+    if(!team?.crest) return `<div class="crest-wrap" style="width:${sz}px;height:${sz}px"><span class="crest-tla">${team?.tla||'?'}</span></div>`;
+    return `<div class="crest-wrap" style="width:${sz}px;height:${sz}px">
+        <img src="${team.crest}" width="${sz}" height="${sz}" alt="${team.tla||''}"
+             onerror="this.style.display='none'">
+    </div>`;
 }
 
-// ── Match status rendering ────────────────────────────────────────────────────
-function matchStatus(m) {
-    const s = m.score?.fullTime;
-    const isLive = m.status === 'IN_PLAY';
-    const isPaused = m.status === 'PAUSED';
-    const isDone = m.status === 'FINISHED' || m.status === 'AWARDED';
+// ── Date helpers ─────────────────────────────────────────────────────────────
+function localDay(utc){const d=new Date(utc);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function todayDay(){return localDay(new Date().toISOString())}
+function fmtDay(utc){return new Date(utc).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
+function fmtTime(utc){return new Date(utc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
 
-    if (isDone)   return { home: s.home, away: s.away, label:'FT',       cls:'st-ft',   live:false };
-    if (isLive)   return { home: s?.home??0, away: s?.away??0, label:'● LIVE', cls:'st-live', live:true  };
-    if (isPaused) return { home: s?.home??0, away: s?.away??0, label:'HT',     cls:'st-ht',   live:true  };
-    return { home:null, away:null, label: fmtTime(m.utcDate), cls:'st-soon', live:false };
+// ── Match status ─────────────────────────────────────────────────────────────
+function matchSt(m){
+    const s=m.score?.fullTime;
+    if(DONE_ST.has(m.status))  return{h:s?.home??'-',a:s?.away??'-',label:'FT',cls:'st-ft',live:false};
+    if(m.status==='LIVE')      return{h:s?.home??0, a:s?.away??0, label:'● LIVE',cls:'st-live',live:true};
+    if(m.status==='PAUSED')    return{h:s?.home??0, a:s?.away??0, label:'HT',cls:'st-ht',live:true};
+    return{h:null,a:null,label:fmtTime(m.utcDate),cls:'st-soon',live:false};
+}
+function winClass(m,side){
+    if(!DONE_ST.has(m.status))return'';
+    const w=m.score?.winner;if(!w||w==='DRAW')return'';
+    return((side==='home'&&w==='HOME_TEAM')||(side==='away'&&w==='AWAY_TEAM'))?'winner':'loser';
 }
 
-function teamClass(m, side) {
-    if (m.status !== 'FINISHED' && m.status !== 'AWARDED') return '';
-    const w = m.score?.winner;
-    if (!w || w === 'DRAW') return '';
-    const won = (side === 'home' && w === 'HOME_TEAM') || (side === 'away' && w === 'AWAY_TEAM');
-    return won ? 'winner' : 'loser';
-}
-
-function matchCard(m) {
-    const { home, away, label, cls, live } = matchStatus(m);
-    const scoreHtml = home !== null
-        ? `<span>${home}</span><span class="score-sep">–</span><span>${away}</span>`
-        : `<span style="color:#555;font-size:16px;font-weight:400">vs</span>`;
-    const grp = m.group ? `Grp ${m.group.replace('GROUP_','')}` : (STAGE_LABEL[m.stage]||m.stage);
-    const md  = m.matchday ? ` · MD${m.matchday}` : '';
-    return `
-    <div class="match-card ${live?'live':''}">
-        <div class="match-team">
-            <span class="team-flag">${flag(m.homeTeam.name)}</span>
-            <span class="team-name ${teamClass(m,'home')}">${m.homeTeam.shortName||m.homeTeam.name}</span>
-        </div>
+// ── Match card HTML ──────────────────────────────────────────────────────────
+function matchCard(m){
+    const{h,a,label,cls,live}=matchSt(m);
+    const ht=m.homeTeam, at=m.awayTeam;
+    const htName=ht?`<span class="team-name-txt ${winClass(m,'home')}">${ht.shortName||ht.name}</span>`:`<span class="team-tbd">TBD</span>`;
+    const atName=at?`<span class="team-name-txt ${winClass(m,'away')}">${at.shortName||at.name}</span>`:`<span class="team-tbd">TBD</span>`;
+    const scoreHtml=h!==null?`<span>${h}</span><span class="score-sep">–</span><span>${a}</span>`:`<span class="score-vs">vs</span>`;
+    const grp=m.group?`Grp ${m.group.replace('GROUP_','')} · `:'';
+    const lbl=STAGE_LABEL[m.stage]||m.stage;
+    const md=m.matchday?` MD${m.matchday}`:'';
+    return`<div class="match-card ${live?'live-card':''} ${DONE_ST.has(m.status)?'finished-card':''}">
+        <div class="match-team">${crest(ht)}${htName}</div>
         <div class="match-center">
             <div class="score-nums">${scoreHtml}</div>
             <div class="match-status ${cls}">${label}</div>
-            <div class="match-meta">${grp}${md}</div>
+            <div class="match-meta">${grp}${lbl}${md}</div>
         </div>
-        <div class="match-team away">
-            <span class="team-flag">${flag(m.awayTeam.name)}</span>
-            <span class="team-name ${teamClass(m,'away')}">${m.awayTeam.shortName||m.awayTeam.name}</span>
-        </div>
+        <div class="match-team away">${atName}${crest(at)}</div>
     </div>`;
 }
 
-// ── Phase detection ───────────────────────────────────────────────────────────
-function detectPhase(matches) {
-    // Most advanced stage with upcoming/live matches
-    const active = matches.filter(m => !['FINISHED','AWARDED'].includes(m.status));
-    for (const stage of [...STAGE_ORDER].reverse()) {
-        if (active.some(m => m.stage === stage)) return stage;
-    }
-    // All done
-    for (const stage of [...STAGE_ORDER].reverse()) {
-        if (matches.some(m => m.stage === stage)) return stage;
-    }
-    return 'GROUP_STAGE';
+// ── Phase detection ──────────────────────────────────────────────────────────
+function detectPhase(matches){
+    // Base on stages that have actually been played/are live — not future TIMED matches
+    const started=new Set(matches.filter(m=>DONE_ST.has(m.status)||LIVE_ST.has(m.status)).map(m=>m.stage));
+    for(const s of [...STAGE_ORDER].reverse())if(started.has(s))return s;
+    for(const s of STAGE_ORDER)if(matches.some(m=>m.stage===s))return s;
+    return'GROUP_STAGE';
+}
+function detectMatchday(matches,stage){
+    if(stage!=='GROUP_STAGE')return null;
+    const played=matches.filter(m=>m.stage==='GROUP_STAGE'&&(DONE_ST.has(m.status)||LIVE_ST.has(m.status))).map(m=>m.matchday);
+    return played.length?Math.max(...played):1;
 }
 
-function detectMatchday(matches, stage) {
-    if (stage !== 'GROUP_STAGE') return null;
-    const active = matches.filter(m => m.stage === 'GROUP_STAGE' && !['FINISHED','AWARDED'].includes(m.status));
-    if (active.length) return Math.min(...active.map(m=>m.matchday));
-    const done = matches.filter(m => m.stage === 'GROUP_STAGE' && ['FINISHED','AWARDED'].includes(m.status));
-    return done.length ? Math.max(...done.map(m=>m.matchday)) : 1;
-}
-
-// ── Render: phase banner ──────────────────────────────────────────────────────
-function renderPhase(matches) {
-    const stage = detectPhase(matches);
-    const md = detectMatchday(matches, stage);
-    const subtitle = stage === 'GROUP_STAGE' && md ? `Matchday ${md} of 3` : '';
-    const liveCount = matches.filter(m=>['IN_PLAY','PAUSED'].includes(m.status)).length;
-    const liveHtml = liveCount ? `<span style="color:#27AE60;font-size:12px;font-weight:700">● ${liveCount} LIVE</span>` : '';
-    document.getElementById('phase-section').innerHTML = `
+// ── Render: phase banner ─────────────────────────────────────────────────────
+function renderPhase(matches){
+    const stage=detectPhase(matches);
+    const md=detectMatchday(matches,stage);
+    const sub=stage==='GROUP_STAGE'&&md?`Matchday ${md} of 3`:'';
+    const liveN=matches.filter(m=>LIVE_ST.has(m.status)).length;
+    const liveHtml=liveN?`<div class="live-count"><div class="live-dot"></div>${liveN} LIVE now</div>`:'';
+    document.getElementById('phase-section').innerHTML=`
     <div class="phase-banner">
-        <div class="phase-left">
-            <div class="phase-chip">2026 FIFA World Cup</div>
+        <div>
+            <div class="phase-chip">🏆 2026 FIFA World Cup</div>
             <div class="phase-title">${STAGE_LABEL[stage]||stage}</div>
-            ${subtitle ? `<div class="phase-sub">${subtitle}</div>` : ''}
+            ${sub?`<div class="phase-sub">${sub}</div>`:''}
         </div>
-        <div class="phase-right">${liveHtml}</div>
+        <div>${liveHtml}</div>
     </div>`;
 }
 
-// ── Render: today's matches ───────────────────────────────────────────────────
-function renderToday(matches) {
-    const today = todayStr();
-    const live = matches.filter(m => ['IN_PLAY','PAUSED'].includes(m.status));
-    const todayMatches = matches.filter(m => localDateStr(m.utcDate) === today);
-    const upcoming = matches.filter(m => ['SCHEDULED','TIMED'].includes(m.status)).sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
-    const recent = matches.filter(m => ['FINISHED','AWARDED'].includes(m.status)).sort((a,b)=>new Date(b.utcDate)-new Date(a.utcDate));
+// ── Render: matches ──────────────────────────────────────────────────────────
+function groupByDay(ms){
+    const map=new Map();
+    for(const m of ms){const d=localDay(m.utcDate);if(!map.has(d))map.set(d,[]);map.get(d).push(m);}
+    return[...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+}
 
-    let liveHtml = '', liveSection = '';
-    if (live.length) {
-        liveHtml = live.map(matchCard).join('');
-        liveSection = `<div class="section-label" style="color:#27AE60;margin-bottom:10px">● Live Now</div>${liveHtml}<div style="height:20px"></div>`;
-        document.getElementById('live-section').innerHTML = liveSection;
+function renderMatches(matches){
+    const today=todayDay();
+    const live=matches.filter(m=>LIVE_ST.has(m.status));
+    const todayMs=matches.filter(m=>localDay(m.utcDate)===today);
+
+    // Live section
+    if(live.length){
+        document.getElementById('live-section').innerHTML=
+            `<div class="section-label" style="color:#22c55e;margin-bottom:10px"><span class="live-dot" style="display:inline-block;margin-right:5px"></span>Live Now</div>`+
+            live.map(matchCard).join('')+`<div style="height:20px"></div>`;
     } else {
-        document.getElementById('live-section').innerHTML = '';
+        document.getElementById('live-section').innerHTML='';
     }
 
-    const el = document.getElementById('today-section');
+    const el=document.getElementById('today-section');
+    const nonLive=todayMs.filter(m=>!LIVE_ST.has(m.status));
 
-    if (todayMatches.length) {
-        const nonLive = todayMatches.filter(m => !['IN_PLAY','PAUSED'].includes(m.status));
-        const html = nonLive.length
-            ? `<div class="section-label">Today's Matches</div>
-               <div class="day-header">${fmtDateHeader(todayMatches[0].utcDate)}</div>
-               ${nonLive.map(matchCard).join('')}`
-            : `<div class="section-label">Today's Matches</div>
-               <div class="error-msg" style="padding:20px">All of today's matches are live above.</div>`;
-        el.innerHTML = html;
+    if(todayMs.length){
+        el.innerHTML=`<div class="section-label">Today's Matches</div>
+            <div class="day-header">${fmtDay(todayMs[0].utcDate)}</div>`+
+            nonLive.map(matchCard).join('');
         return;
     }
 
-    // No matches today — show recent + upcoming
-    let html = '';
-    if (recent.length) {
-        const byDay = groupByDay(recent.slice(0, 12));
-        html += `<div class="section-label">Recent Results</div>`;
-        for (const [day, ms] of byDay.slice(0,2)) {
-            html += `<div class="day-header">${fmtDateHeader(ms[0].utcDate)}</div>` + ms.map(matchCard).join('');
+    // No matches today — recent + upcoming
+    const recent=matches.filter(m=>DONE_ST.has(m.status)).sort((a,b)=>new Date(b.utcDate)-new Date(a.utcDate));
+    const upcoming=matches.filter(m=>SCHED_ST.has(m.status)).sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
+    let html='';
+    if(recent.length){
+        html+=`<div class="section-label">Recent Results</div>`;
+        for(const[,ms] of groupByDay(recent.slice(0,12)).slice(0,2)){
+            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(matchCard).join('');
         }
     }
-    if (upcoming.length) {
-        const byDay = groupByDay(upcoming.slice(0,12));
-        html += `<div class="section-label" style="margin-top:${recent.length?'28px':'0'}">Upcoming</div>`;
-        for (const [day, ms] of byDay.slice(0,2)) {
-            html += `<div class="day-header">${fmtDateHeader(ms[0].utcDate)}</div>` + ms.map(matchCard).join('');
+    if(upcoming.length){
+        html+=`<div class="section-label" style="margin-top:${recent.length?'28px':'0'}">Coming Up</div>`;
+        for(const[,ms] of groupByDay(upcoming.slice(0,12)).slice(0,2)){
+            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(matchCard).join('');
         }
     }
-    el.innerHTML = html || '<div class="error-msg">No matches found.</div>';
+    el.innerHTML=html||'<div class="error-msg">No matches found.</div>';
 }
 
-function groupByDay(matches) {
-    const map = new Map();
-    for (const m of matches) {
-        const d = localDateStr(m.utcDate);
-        if (!map.has(d)) map.set(d, []);
-        map.get(d).push(m);
+// ── Render: group snapshot ───────────────────────────────────────────────────
+function renderGroupSnapshot(standings){
+    // API returns stage:'ALL' type:'TOTAL' — one entry per group
+    const groups=standings.filter(s=>s.type==='TOTAL').sort((a,b)=>a.group.localeCompare(b.group));
+    if(!groups.length){
+        document.getElementById('groups-section').innerHTML=
+            '<div class="error-msg" style="grid-column:1/-1">Standings not yet available.</div>';
+        return;
     }
-    return [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
-}
-
-// ── Render: group snapshot ────────────────────────────────────────────────────
-function renderGroupSnapshot(standings) {
-    const groups = standings.filter(s => s.type === 'TOTAL' && s.stage === 'GROUP_STAGE');
-    groups.sort((a,b) => a.group.localeCompare(b.group));
-
-    const html = groups.map(g => {
-        const letter = g.group.replace('GROUP_','');
-        const rows = g.table.slice(0,4).map((row, i) => {
-            const qCls = i===0?'q1': i===1?'q2': i===2?'q3':'q4';
-            return `<div class="mini-row ${qCls}">
+    const html=groups.map(g=>{
+        const letter=g.group.replace('Group ','');
+        const rows=g.table.slice(0,4).map((row,i)=>{
+            const qc=i===0?'q1':i===1?'q2':i===2?'q3':'q4';
+            const imgHtml=row.team.crest
+                ?`<img class="mini-crest" src="${row.team.crest}" alt="${row.team.tla}" onerror="this.style.display='none'">`
+                :'';
+            return`<div class="mini-row ${qc}">
                 <div class="mini-bar"></div>
-                <span class="mini-pos">${row.position}</span>
-                <span class="mini-flag">${flag(row.team.name)}</span>
-                <span class="mini-name">${row.team.tla||row.team.shortName}</span>
+                ${imgHtml}
+                <span class="mini-name">${row.team.tla}</span>
                 <span class="mini-pts">${row.points}</span>
             </div>`;
         }).join('');
-        return `<div class="group-mini">
-            <div class="group-mini-title">Group ${letter}</div>
-            ${rows}
+        return`<div class="group-mini">
+            <div class="group-mini-title">Group ${letter}</div>${rows}
         </div>`;
     }).join('');
-
-    document.getElementById('groups-section').innerHTML = html || '<div class="error-msg">Standings not yet available.</div>';
+    document.getElementById('groups-section').innerHTML=html;
 }
 
-// ── Auto-refresh live ─────────────────────────────────────────────────────────
-let refreshTimer = null;
-function scheduleRefresh(matches) {
-    clearInterval(refreshTimer);
-    const hasLive = matches.some(m => ['IN_PLAY','PAUSED'].includes(m.status));
-    if (hasLive) {
-        refreshTimer = setInterval(async () => {
-            cacheSet('wc_matches', null, 0); // invalidate
-            try { await init(); } catch {}
-        }, 60000);
+// ── Auto-refresh ─────────────────────────────────────────────────────────────
+let _timer=null;
+function scheduleRefresh(matches){
+    clearInterval(_timer);
+    if(matches.some(m=>LIVE_ST.has(m.status))){
+        _timer=setInterval(async()=>{
+            cacheSet('wc_matches',null,0);
+            try{await init();}catch{}
+        },60000);
     }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-async function init() {
-    try {
-        const [matchData, standingsData] = await Promise.all([
-            getMatches(), getStandings()
-        ]);
-        const matches = matchData.matches || [];
-        const standings = standingsData.standings || [];
-
+async function init(){
+    try{
+        const[md,sd]=await Promise.all([getMatches(),getStandings()]);
+        const matches=md.matches||[], standings=sd.standings||[];
         renderPhase(matches);
-        renderToday(matches);
+        renderMatches(matches);
         renderGroupSnapshot(standings);
         scheduleRefresh(matches);
-
-        document.getElementById('refresh-note').textContent = `Updated ${fmtUpdated(new Date())}`;
-    } catch(e) {
-        const msg = e.message?.includes('401') ? 'Invalid API key — check YOUR_KEY_HERE.' : `Error: ${e.message}`;
-        ['phase-section','today-section','groups-section'].forEach(id => {
-            document.getElementById(id).innerHTML = `<div class="error-msg">${msg}</div>`;
+        const upd=md._meta?.updated||sd._meta?.updated;
+        document.getElementById('refresh-note').textContent=upd
+            ?`Data updated ${new Date(upd).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`
+            :`Updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+    }catch(e){
+        const msg=e.message?.includes('404')?'Data not yet available — workflow may still be running.':
+                  e.message?.includes('401')?'Invalid API key.':
+                  `Error loading data: ${e.message}`;
+        ['phase-section','today-section','groups-section'].forEach(id=>{
+            document.getElementById(id).innerHTML=`<div class="error-msg">${msg}</div>`;
         });
     }
 }
-
 init();
 </script>
 </body>

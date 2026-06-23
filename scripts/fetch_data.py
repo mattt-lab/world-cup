@@ -59,7 +59,7 @@ def main():
 
     n_matches = len(matches.get("matches", []))
     n_groups  = len(standings.get("standings", []))
-    live      = sum(1 for m in matches.get("matches", []) if m.get("status") in ("IN_PLAY", "PAUSED"))
+    live      = sum(1 for m in matches.get("matches", []) if m.get("status") in ("LIVE", "IN_PLAY", "PAUSED"))
 
     print(f"\n  matches:   {n_matches} total, {live} live")
     print(f"  standings: {n_groups} group entries")
