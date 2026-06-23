@@ -22,9 +22,8 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 .page-title{font-size:22px;font-weight:800;margin-bottom:16px}
 .match-count{font-size:12px;color:#444;margin-bottom:16px}
 
-/* Filter bar — single scrollable row, no wrap */
-.filter-bar{display:flex;gap:6px;margin-bottom:20px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px;scrollbar-width:none}
-.filter-bar::-webkit-scrollbar{display:none}
+/* Filter bar — wraps to multiple rows */
+.filter-bar{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
 .filter-btn{flex-shrink:0;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:6px 14px;border-radius:20px;border:1px solid #222;background:transparent;color:#555;cursor:pointer;transition:all .15s;white-space:nowrap}
 .filter-btn:hover{border-color:#333;color:#aaa}
 .filter-btn.active{background:#22c55e;border-color:#22c55e;color:#000}
@@ -75,7 +74,7 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ World Cup <em>2026</em> <span class="logo-ver">v0.5</span></div>
+    <div class="logo">⚽ World Cup <em>2026</em> <span class="logo-ver">v0.6</span></div>
     <nav>
         <a href="wc-dashboard.html">Today</a>
         <a href="wc-groups.html">Groups</a>
