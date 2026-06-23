@@ -77,11 +77,16 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .error-msg{background:#151515;border:1px solid #1e1e1e;border-radius:10px;padding:24px;text-align:center;color:#444;font-size:13px}
 .refresh-note{font-size:10px;color:#2a2a2a;text-align:right;margin-top:14px}
+@media(max-width:600px){
+    header{padding:0 16px}
+    .logo-wordmark,.logo-ver{display:none}
+    nav a{margin-left:14px;font-size:10px}
+}
 </style>
 </head>
 <body>
 <header>
-    <div class="logo">⚽ World Cup <em>2026</em> <span class="logo-ver">v1.0</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v1.1</span></div>
     <nav>
         <a href="wc-dashboard.html">Today</a>
         <a href="wc-groups.html">Groups</a>

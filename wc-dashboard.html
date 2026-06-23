@@ -89,11 +89,16 @@ a.match-link:hover .match-card{border-color:#2e2e2e}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .error-msg{background:#151515;border:1px solid #1e1e1e;border-radius:10px;padding:24px;text-align:center;color:#444;font-size:13px}
 .refresh-note{font-size:10px;color:#2a2a2a;text-align:right;margin-top:14px}
+@media(max-width:600px){
+    header{padding:0 16px}
+    .logo-wordmark,.logo-ver{display:none}
+    nav a{margin-left:14px;font-size:10px}
+}
 </style>
 </head>
 <body>
 <header>
-    <div class="logo">⚽ World Cup <em>2026</em> <span class="logo-ver">v1.0</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v1.1</span></div>
     <nav>
         <a href="wc-dashboard.html" class="active">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -260,6 +265,7 @@ async function loadJson(file,key,ttl=120000){
 }
 const getMatches   = ()=>loadJson('matches.json','wc_matches',120000);
 const getStandings = ()=>loadJson('standings.json','wc_standings',120000);
+const getLive      = ()=>loadJson('live.json','wc_live',60000).catch(()=>({matches:{}}));
 
 // ── Crest helpers ─────────────────────────────────────────────────────────────
 function crest(team,sz=34){
@@ -380,12 +386,26 @@ function computeLiveBlurb(match, standingsArr){
 }
 
 // ── Hero live card ────────────────────────────────────────────────────────────
-function liveHeroCard(m, standingsArr){
-    const s=m.score?.fullTime;
-    const h=s?.home??0, a=s?.away??0;
-    const isHT=m.status==='PAUSED';
-    const statusLabel=isHT?'Half Time':'● Live';
+function liveHeroCard(m, standingsArr, liveScores){
+    // Prefer ESPN live score; fall back to football-data.org score
+    const key=`${m.homeTeam?.tla}:${m.awayTeam?.tla}`;
+    const espn=liveScores?.[key];
+    const fdScore=m.score?.fullTime;
+    const h=espn?.homeScore??fdScore?.home??0;
+    const a=espn?.awayScore??fdScore?.away??0;
+
+    // Clock / status label — ESPN gives displayClock e.g. "67:23" or "45+2:00"
+    const isHT=m.status==='PAUSED'||espn?.detail?.toLowerCase().includes('half time');
+    let statusLabel='● Live';
+    if(isHT){
+        statusLabel='Half Time';
+    } else if(espn?.clock&&espn.clock!=='0:00'){
+        const min=espn.clock.split(':')[0]; // "67" or "45+2"
+        const half=espn.period===2?'2nd Half':'1st Half';
+        statusLabel=`● ${min}' · ${half}`;
+    }
     const statusCls=isHT?'ht':'';
+
     const grp=m.group?`Group ${m.group.replace('GROUP_','')} · `:'';
     const lbl=STAGE_LABEL[m.stage]||m.stage;
     const md=m.matchday?` · Matchday ${m.matchday}`:'';
@@ -467,7 +487,7 @@ function groupByDay(ms){
     return[...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
 }
 
-function renderMatches(matches,standingsArr){
+function renderMatches(matches,standingsArr,liveScores){
     const today=todayDay();
     const live=matches.filter(m=>isLive(m));
     const todayMs=matches.filter(m=>localDay(m.utcDate)===today);
@@ -475,7 +495,7 @@ function renderMatches(matches,standingsArr){
     if(live.length){
         document.getElementById('live-section').innerHTML=
             `<div class="section-label" style="color:#22c55e;margin-bottom:12px">Live Now</div>`+
-            live.map(m=>liveHeroCard(m,standingsArr)).join('')+
+            live.map(m=>liveHeroCard(m,standingsArr,liveScores)).join('')+
             `<div style="height:24px"></div>`;
     } else {
         document.getElementById('live-section').innerHTML='';
@@ -531,11 +551,12 @@ function scheduleRefresh(matches){
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init(){
     try{
-        const[md,sd]=await Promise.all([getMatches(),getStandings()]);
+        const[md,sd,ld]=await Promise.all([getMatches(),getStandings(),getLive()]);
         const matches=md.matches||[];
         const standingsArr=(sd.standings||[]).filter(s=>s.type==='TOTAL');
+        const liveScores=ld.matches||{};
         renderPhase(matches);
-        renderMatches(matches,standingsArr);
+        renderMatches(matches,standingsArr,liveScores);
         scheduleRefresh(matches);
         const upd=md._meta?.updated||sd._meta?.updated;
         document.getElementById('refresh-note').textContent=upd
