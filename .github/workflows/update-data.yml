@@ -1,0 +1,36 @@
+name: Update World Cup Data
+
+on:
+  schedule:
+    - cron: '*/5 12-03 * * *'  # Every 5 min during match hours (12:00–03:00 UTC)
+    - cron: '0 4-11 * * *'     # Hourly overnight (no matches)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-and-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-python@v5.6.0
+        with: { python-version: '3.12' }
+
+      - name: Fetch data
+        run: python scripts/fetch_data.py
+        env:
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "WC Data Bot"
+          git config user.email "actions@github.com"
+          git add data/matches.json data/standings.json
+          if git diff --staged --quiet; then
+            echo "No changes — skipping commit"
+          else
+            git commit -m "chore: update WC data [skip ci]"
+            git push
+          fi

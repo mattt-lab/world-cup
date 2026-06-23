@@ -102,9 +102,7 @@ table.gt tbody td.td-team{text-align:left;padding-left:0}
 </main>
 
 <script>
-const API_KEY = 'b200b024810649c195ad69436cdc1a62';
-const BASE    = 'https://api.football-data.org/v4';
-let _reqAvail = 10, _resetMs = 0;
+// data served from static JSON — no API key needed client-side
 
 const FLAGS = {
     'Argentina':'🇦🇷','Australia':'🇦🇺','Austria':'🇦🇹','Belgium':'🇧🇪',
@@ -140,16 +138,10 @@ function cacheGet(k) {
 function cacheSet(k, data, ttl) {
     try { localStorage.setItem(k, JSON.stringify({data,ts:Date.now(),ttl})); } catch {}
 }
-async function apiFetch(path, cacheKey, ttl=300000) {
+async function apiFetch(file, cacheKey, ttl=120000) {
     const c = cacheKey ? cacheGet(cacheKey) : null;
     if (c) return c;
-    if (_reqAvail <= 1 && _resetMs > Date.now())
-        await new Promise(r => setTimeout(r, _resetMs - Date.now() + 200));
-    const r = await fetch(`${BASE}${path}`, {headers:{'X-Auth-Token':API_KEY}});
-    const avail = r.headers.get('X-Requests-Available-Minute');
-    const reset = r.headers.get('X-RequestCounter-Reset');
-    if (avail !== null) _reqAvail = parseInt(avail, 10);
-    if (reset !== null) _resetMs  = Date.now() + parseInt(reset, 10) * 1000;
+    const r = await fetch(`data/${file}?_=${Date.now()}`);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     if (cacheKey) cacheSet(cacheKey, data, ttl);
@@ -216,7 +208,7 @@ function groupCardHtml(g) {
 
 async function init() {
     try {
-        const data = await apiFetch('/competitions/WC/standings', 'wc_standings', 300000);
+        const data = await apiFetch('standings.json', 'wc_standings', 120000);
         const groups = (data.standings||[])
             .filter(s => s.type==='TOTAL' && s.stage==='GROUP_STAGE')
             .sort((a,b) => a.group.localeCompare(b.group));
