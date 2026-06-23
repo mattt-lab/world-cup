@@ -174,15 +174,24 @@ function localDay(utc){const d=new Date(utc);return`${d.getFullYear()}-${String(
 function fmtDay(utc){return new Date(utc).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
 function fmtTime(utc){return new Date(utc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
 
+// Guard against API lag: treat LIVE matches started >130 min ago as FINISHED
+function effectiveStatus(m){
+    if(m.status==='LIVE'||m.status==='IN_PLAY'){
+        if((Date.now()-new Date(m.utcDate))/60000>130)return'FINISHED';
+    }
+    return m.status;
+}
+
 function matchSt(m){
     const s=m.score?.fullTime;
-    if(DONE_ST.has(m.status))  return{h:s?.home??'-',a:s?.away??'-',label:'FT',cls:'st-ft',live:false};
-    if(m.status==='LIVE')      return{h:s?.home??0, a:s?.away??0, label:'<span class="live-dot"></span>LIVE',cls:'st-live',live:true};
-    if(m.status==='PAUSED')    return{h:s?.home??0, a:s?.away??0, label:'HT',cls:'st-ht',live:true};
+    const eff=effectiveStatus(m);
+    if(DONE_ST.has(eff))  return{h:s?.home??'-',a:s?.away??'-',label:'FT',cls:'st-ft',live:false};
+    if(eff==='LIVE')      return{h:s?.home??0, a:s?.away??0, label:'<span class="live-dot"></span>LIVE',cls:'st-live',live:true};
+    if(eff==='PAUSED')    return{h:s?.home??0, a:s?.away??0, label:'HT',cls:'st-ht',live:true};
     return{h:null,a:null,label:fmtTime(m.utcDate),cls:'st-soon',live:false};
 }
 function winCls(m,side){
-    if(!DONE_ST.has(m.status))return'';
+    if(!DONE_ST.has(effectiveStatus(m)))return'';
     const w=m.score?.winner;if(!w||w==='DRAW')return'';
     return((side==='home'&&w==='HOME_TEAM')||(side==='away'&&w==='AWAY_TEAM'))?'winner':'loser';
 }
@@ -278,8 +287,8 @@ function renderMatches(){
     const filtered=activeFilter==='ALL'?allMatches:allMatches.filter(m=>m.stage===activeFilter);
     document.getElementById('match-count').textContent=`${filtered.length} matches`;
 
-    const done=filtered.filter(m=>DONE_ST.has(m.status));
-    const active=filtered.filter(m=>!DONE_ST.has(m.status));
+    const done=filtered.filter(m=>DONE_ST.has(effectiveStatus(m)));
+    const active=filtered.filter(m=>!DONE_ST.has(effectiveStatus(m)));
 
     let html='';
     if(active.length) html+=renderStageGroups(active);
