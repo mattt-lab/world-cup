@@ -188,9 +188,11 @@ function fmtTime(utc){return new Date(utc).toLocaleTimeString('en-US',{hour:'num
 
 // Guard against API lag: treat LIVE matches started >130 min ago as FINISHED
 function effectiveStatus(m){
-    if(m.status==='LIVE'||m.status==='IN_PLAY'){
-        if((Date.now()-new Date(m.utcDate))/60000>130)return'FINISHED';
-    }
+    const elapsedMin=(Date.now()-new Date(m.utcDate))/60000;
+    if((m.status==='TIMED'||m.status==='SCHEDULED')&&elapsedMin>3&&elapsedMin<=130)
+        return'IN_PLAY';
+    if((m.status==='LIVE'||m.status==='IN_PLAY')&&elapsedMin>130)
+        return'FINISHED';
     return m.status;
 }
 

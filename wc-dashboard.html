@@ -337,10 +337,13 @@ function fmtTime(utc){return new Date(utc).toLocaleTimeString('en-US',{hour:'num
 
 // Correct for API lag: if a LIVE match started >130 min ago, treat as FINISHED
 function effectiveStatus(m){
-    if(m.status==='LIVE'||m.status==='IN_PLAY'){
-        const elapsedMin=(Date.now()-new Date(m.utcDate))/60000;
-        if(elapsedMin>130)return'FINISHED';
-    }
+    const elapsedMin=(Date.now()-new Date(m.utcDate))/60000;
+    // API hasn't flipped TIMED→IN_PLAY yet but kickoff has passed
+    if((m.status==='TIMED'||m.status==='SCHEDULED')&&elapsedMin>3&&elapsedMin<=130)
+        return'IN_PLAY';
+    // API hasn't flipped LIVE→FINISHED yet after full time
+    if((m.status==='LIVE'||m.status==='IN_PLAY')&&elapsedMin>130)
+        return'FINISHED';
     return m.status;
 }
 function isLive(m){ const s=effectiveStatus(m); return s==='LIVE'||s==='IN_PLAY'||s==='PAUSED'; }
