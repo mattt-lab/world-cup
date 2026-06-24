@@ -571,7 +571,8 @@ function renderMatches(matches,standingsArr,liveScores,liveUpdated){
         let html=`<div class="section-label">${fmtDay(todayMs[0].utcDate)}</div>`;
         if(upcoming.length){
             html+=`<div class="subsec-label green">Coming up</div>`;
-            html+=upcoming.map((m,i)=>matchCard(m,computeStakes(m,standingsArr),i===0)).join('');
+            const nextKickoff=upcoming[0].utcDate;
+            html+=upcoming.map(m=>matchCard(m,computeStakes(m,standingsArr),m.utcDate===nextKickoff)).join('');
         }
         if(finished.length){
             html+=`<div class="subsec-label" style="margin-top:${upcoming.length?'18px':'4px'}">Earlier today</div>`;
