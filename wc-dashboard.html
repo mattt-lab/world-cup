@@ -266,7 +266,42 @@ async function loadJson(file,key,ttl=120000){
 }
 const getMatches   = ()=>loadJson('matches.json','wc_matches',120000);
 const getStandings = ()=>loadJson('standings.json','wc_standings',120000);
-const getLive      = ()=>loadJson('live.json','wc_live',60000).catch(()=>({matches:{}}));
+
+// ── ESPN live scores (browser fetches directly — updates every 30s) ───────────
+const ESPN_URL='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+async function fetchESPN(){
+    try{
+        const r=await fetch(ESPN_URL);
+        if(!r.ok)return null;
+        return parseESPN(await r.json());
+    }catch{return null;}
+}
+function parseESPN(data){
+    const out={};
+    for(const event of data?.events||[]){
+        const competitors=event.competitions?.[0]?.competitors||[];
+        const home=competitors.find(c=>c.homeAway==='home');
+        const away=competitors.find(c=>c.homeAway==='away');
+        if(!home||!away)continue;
+        const homeTla=home.team?.abbreviation;
+        const awayTla=away.team?.abbreviation;
+        if(!homeTla||!awayTla)continue;
+        const status=event.status||{};
+        const stType=status.type||{};
+        out[`${homeTla}:${awayTla}`]={
+            homeScore:parseInt(home.score||0),
+            awayScore:parseInt(away.score||0),
+            state:stType.state||'',
+            clock:status.displayClock||'',
+            period:status.period||1,
+            detail:stType.shortDetail||'',
+        };
+    }
+    return out;
+}
+
+// Module-level state so the 30s ESPN timer can re-render without a full init
+let _currentMatches=[], _currentStandings=[], _liveScores={}, _liveUpdated=null;
 
 // ── Crest helpers ─────────────────────────────────────────────────────────────
 function crest(team,sz=34){
@@ -550,25 +585,48 @@ function renderMatches(matches,standingsArr,liveScores,liveUpdated){
 }
 
 // ── Auto-refresh ──────────────────────────────────────────────────────────────
-let _timer=null;
+let _matchTimer=null, _espnTimer=null;
+
+async function refreshLiveSection(){
+    const scores=await fetchESPN();
+    if(!scores)return;
+    _liveScores=scores;
+    _liveUpdated=new Date().toISOString();
+    const live=_currentMatches.filter(m=>isLive(m));
+    if(!live.length)return;
+    document.getElementById('live-section').innerHTML=
+        `<div class="section-label" style="color:#22c55e;margin-bottom:12px">Live Now</div>`+
+        live.map(m=>liveHeroCard(m,_currentStandings,_liveScores,_liveUpdated)).join('')+
+        `<div style="height:24px"></div>`;
+}
+
 function scheduleRefresh(matches){
-    clearInterval(_timer);
+    clearInterval(_matchTimer);
+    clearInterval(_espnTimer);
     if(matches.some(m=>isLive(m))){
-        _timer=setInterval(async()=>{cacheSet('wc_matches',null,0);try{await init();}catch{}},60000);
+        // Full data refresh every 60s (matches.json + standings.json)
+        _matchTimer=setInterval(async()=>{
+            cacheSet('wc_matches',null,0);
+            cacheSet('wc_standings',null,0);
+            try{await init();}catch{}
+        },60000);
+        // ESPN score refresh every 30s — browser fetches directly, no GH Actions lag
+        _espnTimer=setInterval(refreshLiveSection,30000);
     }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init(){
     try{
-        const[md,sd,ld]=await Promise.all([getMatches(),getStandings(),getLive()]);
-        const matches=md.matches||[];
-        const standingsArr=(sd.standings||[]).filter(s=>s.type==='TOTAL');
-        const liveScores=ld.matches||{};
-        const liveUpdated=ld._meta?.updated||md._meta?.updated;
-        renderPhase(matches);
-        renderMatches(matches,standingsArr,liveScores,liveUpdated);
-        scheduleRefresh(matches);
+        const[md,sd]=await Promise.all([getMatches(),getStandings()]);
+        _currentMatches=md.matches||[];
+        _currentStandings=(sd.standings||[]).filter(s=>s.type==='TOTAL');
+        // Fetch ESPN directly — fresh score data every init, no GH Actions dependency
+        const scores=await fetchESPN();
+        if(scores){_liveScores=scores;_liveUpdated=new Date().toISOString();}
+        renderPhase(_currentMatches);
+        renderMatches(_currentMatches,_currentStandings,_liveScores,_liveUpdated);
+        scheduleRefresh(_currentMatches);
         const upd=md._meta?.updated||sd._meta?.updated;
         document.getElementById('refresh-note').textContent=upd
             ?`Data updated ${new Date(upd).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`

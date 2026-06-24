@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """
-fetch_data.py — Fetch 2026 World Cup data.
+fetch_data.py — Fetch 2026 World Cup data from football-data.org.
 
 Writes:
-  data/matches.json   — all competition matches (football-data.org)
-  data/standings.json — group stage standings (football-data.org)
-  data/live.json      — live scores (ESPN unofficial scoreboard, no key)
+  data/matches.json   — all competition matches
+  data/standings.json — group stage standings
 
-Runs every 5 minutes via GitHub Actions. Exits early when no match is
-active or imminent, saving ~80% of API calls across the tournament.
+Live scores are now fetched directly by the browser from ESPN's
+unofficial scoreboard API (no key, CORS-open), so they update every
+30 seconds during matches without waiting for this cron job.
+
+Runs every 5 minutes via GitHub Actions; exits early when no match
+is active or imminent to save ~80% of API calls across the tournament.
 """
 
 import json
@@ -21,12 +24,6 @@ BASE    = "https://api.football-data.org/v4"
 API_KEY = os.environ.get("FOOTBALL_DATA_API_KEY", "").strip()
 UA      = "WCDashboard/1.0 (+https://github.com/mattt-lab/world-cup)"
 
-ESPN_URL = (
-    "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard"
-)
-
-# Minutes before kickoff to start fetching, and after kickoff to keep fetching.
-# 140 covers 90 min match + 15 min HT + ~35 min extra time / rain delay buffer.
 PRE_MATCH_MIN  = 10
 POST_MATCH_MIN = 140
 
@@ -35,8 +32,7 @@ def in_match_window():
     """
     Read the existing data/matches.json (no API call) and return True if
     any match is live or within the fetch window around its kickoff time.
-    Returns True if the file is missing/unreadable (forces initial seed fetch),
-    and also if the data is more than 24 hours old.
+    Returns True if the file is missing/unreadable, or data is >24h old.
     """
     try:
         with open("data/matches.json", encoding="utf-8") as f:
@@ -45,7 +41,6 @@ def in_match_window():
         print("  No existing data/matches.json — fetching to seed.")
         return True
 
-    # Force a refresh if data is stale (e.g. after a long CI outage)
     updated_str = data.get("_meta", {}).get("updated", "")
     if updated_str:
         try:
@@ -59,7 +54,6 @@ def in_match_window():
 
     now = datetime.now(timezone.utc)
     for m in data.get("matches", []):
-        # Already marked live by the API
         if m.get("status") in ("LIVE", "IN_PLAY", "PAUSED"):
             return True
         try:
@@ -81,56 +75,6 @@ def fetch(path):
         remaining = r.headers.get("X-Requests-Available-Minute", "?")
         print(f"  GET {path}  →  {r.status}  (quota left: {remaining}/min)")
         return json.loads(r.read().decode())
-
-
-def fetch_espn():
-    """Fetch live scores from ESPN's unofficial scoreboard API. No key needed."""
-    try:
-        req = urllib.request.Request(ESPN_URL)
-        req.add_header("User-Agent", "Mozilla/5.0")
-        req.add_header("Accept", "application/json")
-        with urllib.request.urlopen(req, timeout=10) as r:
-            print(f"  GET ESPN scoreboard  →  {r.status}")
-            return json.loads(r.read().decode())
-    except Exception as e:
-        print(f"  ESPN fetch failed: {e}")
-        return None
-
-
-def parse_espn(data):
-    """
-    Return a dict keyed by 'HOME_TLA:AWAY_TLA' with live score + clock info.
-    """
-    if not data:
-        return {}
-    out = {}
-    for event in data.get("events", []):
-        comps = event.get("competitions", [])
-        if not comps:
-            continue
-        competitors = comps[0].get("competitors", [])
-        home = next((c for c in competitors if c.get("homeAway") == "home"), None)
-        away = next((c for c in competitors if c.get("homeAway") == "away"), None)
-        if not (home and away):
-            continue
-
-        home_tla = home.get("team", {}).get("abbreviation", "")
-        away_tla = away.get("team", {}).get("abbreviation", "")
-        if not (home_tla and away_tla):
-            continue
-
-        status  = event.get("status", {})
-        st_type = status.get("type", {})
-
-        out[f"{home_tla}:{away_tla}"] = {
-            "homeScore": int(home.get("score") or 0),
-            "awayScore": int(away.get("score") or 0),
-            "state":     st_type.get("state", ""),        # "pre" | "in" | "post"
-            "clock":     status.get("displayClock", ""),  # e.g. "67:23"
-            "period":    status.get("period", 1),         # 1 or 2
-            "detail":    st_type.get("shortDetail", ""),  # e.g. "2nd Half, 67:00"
-        }
-    return out
 
 
 def write(path, data):
@@ -162,13 +106,6 @@ def main():
     write("data/matches.json",   matches)
     write("data/standings.json", standings)
 
-    espn_raw    = fetch_espn()
-    espn_scores = parse_espn(espn_raw)
-    write("data/live.json", {
-        "_meta":   {**meta, "source": "ESPN"},
-        "matches": espn_scores,
-    })
-
     n_matches  = len(matches.get("matches", []))
     n_groups   = len(standings.get("standings", []))
     live_count = sum(
@@ -178,7 +115,6 @@ def main():
 
     print(f"\n  matches:   {n_matches} total, {live_count} live")
     print(f"  standings: {n_groups} group entries")
-    print(f"  ESPN live: {len(espn_scores)} match(es) tracked")
     print(f"\n✓  data/ written")
 
 
