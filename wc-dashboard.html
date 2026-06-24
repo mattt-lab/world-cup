@@ -48,6 +48,7 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 .hero-status{font-size:12px;font-weight:700;color:#22c55e;margin-top:5px;letter-spacing:.04em}
 .hero-status.ht{color:#f59e0b}
 .hero-blurb{font-size:12px;color:#888;line-height:1.65;padding-top:16px;border-top:1px solid rgba(34,197,94,.12);margin-top:16px;font-style:italic}
+.hero-refresh{font-size:10px;color:#2e2e2e;text-align:right;margin-top:10px;letter-spacing:.02em}
 
 /* ── Regular match cards ─────────────────────────────────────────────────────── */
 /* Wrapped in an <a> — kill link styles */
@@ -309,6 +310,14 @@ function winClass(m,side){
     return((side==='home'&&w==='HOME_TEAM')||(side==='away'&&w==='AWAY_TEAM'))?'winner':'loser';
 }
 
+function fmtRefreshed(updatedStr){
+    if(!updatedStr)return'';
+    const ageMin=Math.floor((Date.now()-new Date(updatedStr))/60000);
+    if(ageMin<1)return'refreshed just now';
+    if(ageMin===1)return'refreshed 1 min ago';
+    return`refreshed ${ageMin} mins ago`;
+}
+
 // ── Phase detection ───────────────────────────────────────────────────────────
 function detectPhase(matches){
     const started=new Set(matches.filter(m=>isDone(m)||isLive(m)).map(m=>m.stage));
@@ -386,7 +395,7 @@ function computeLiveBlurb(match, standingsArr){
 }
 
 // ── Hero live card ────────────────────────────────────────────────────────────
-function liveHeroCard(m, standingsArr, liveScores){
+function liveHeroCard(m, standingsArr, liveScores, liveUpdated){
     // Prefer ESPN live score; fall back to football-data.org score
     const key=`${m.homeTeam?.tla}:${m.awayTeam?.tla}`;
     const espn=liveScores?.[key];
@@ -427,6 +436,7 @@ function liveHeroCard(m, standingsArr, liveScores){
             <div class="hero-team away"><span class="hero-name">${an}</span>${heroCrest(m.awayTeam)}</div>
         </div>
         ${blurb?`<div class="hero-blurb">${blurb}</div>`:''}
+        <div class="hero-refresh">${fmtRefreshed(liveUpdated)}</div>
     </div>`;
 }
 
@@ -487,7 +497,7 @@ function groupByDay(ms){
     return[...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
 }
 
-function renderMatches(matches,standingsArr,liveScores){
+function renderMatches(matches,standingsArr,liveScores,liveUpdated){
     const today=todayDay();
     const live=matches.filter(m=>isLive(m));
     const todayMs=matches.filter(m=>localDay(m.utcDate)===today);
@@ -495,7 +505,7 @@ function renderMatches(matches,standingsArr,liveScores){
     if(live.length){
         document.getElementById('live-section').innerHTML=
             `<div class="section-label" style="color:#22c55e;margin-bottom:12px">Live Now</div>`+
-            live.map(m=>liveHeroCard(m,standingsArr,liveScores)).join('')+
+            live.map(m=>liveHeroCard(m,standingsArr,liveScores,liveUpdated)).join('')+
             `<div style="height:24px"></div>`;
     } else {
         document.getElementById('live-section').innerHTML='';
@@ -555,8 +565,9 @@ async function init(){
         const matches=md.matches||[];
         const standingsArr=(sd.standings||[]).filter(s=>s.type==='TOTAL');
         const liveScores=ld.matches||{};
+        const liveUpdated=ld._meta?.updated||md._meta?.updated;
         renderPhase(matches);
-        renderMatches(matches,standingsArr,liveScores);
+        renderMatches(matches,standingsArr,liveScores,liveUpdated);
         scheduleRefresh(matches);
         const upd=md._meta?.updated||sd._meta?.updated;
         document.getElementById('refresh-note').textContent=upd
