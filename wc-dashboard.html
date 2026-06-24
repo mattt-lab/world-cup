@@ -404,9 +404,18 @@ function computeStakes(match, standingsArr){
     if(isDone(match)){
         const w=match.score?.winner;
         const winner=w==='HOME_TEAM'?hn:w==='AWAY_TEAM'?an:null;
-        const s1=winner?`${winner} took all three points in Group ${grpLetter}.`:`The sides shared the points in a draw in Group ${grpLetter}.`;
+        const loser=winner===hn?an:winner===an?hn:null;
+        const s1=winner
+            ?`${winner} took all three points in Group ${grpLetter}.`
+            :`The sides shared the points in a draw in Group ${grpLetter}.`;
+        if(md>=3){
+            const s2=winner
+                ?`${loser} will await the final group standings to see if they advance as a best third-place team.`
+                :`The Group ${grpLetter} standings are now confirmed.`;
+            return`${s1} ${s2}`;
+        }
         const s2=winner
-            ?`${winner==='home'?an:hn} will need to regroup ahead of their final group game.`
+            ?`${loser} will need to regroup ahead of their next group game.`
             :`Both teams remain level and will head into the final matchday with everything still to play for.`;
         return`${s1} ${s2}`;
     }
