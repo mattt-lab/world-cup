@@ -95,10 +95,16 @@ a.match-link:hover .match-card{border-color:#2e2e2e}
     .logo-wordmark,.logo-ver{display:none}
     nav a{margin-left:14px;font-size:10px}
 
-    /* Hero card: stack flag + name vertically so name isn't squeezed */
+    /* All match cards: stack flag + name vertically so name isn't squeezed */
+    .match-row{align-items:flex-start}
+    .match-team{flex-direction:column;align-items:flex-start;gap:4px}
+    .match-team.away{flex-direction:column-reverse;align-items:flex-end}
+    .team-name-txt{white-space:normal;overflow:visible;text-overflow:clip;font-size:11px}
+    .match-center{min-width:72px}
+
+    /* Hero card (live matches) — same treatment, larger elements */
     .hero-teams{align-items:flex-start}
     .hero-team{flex-direction:column;align-items:flex-start;gap:5px}
-    /* Away team DOM order is [name][crest] — column-reverse puts crest on top */
     .hero-team.away{flex-direction:column-reverse;align-items:flex-end}
     .hero-name{font-size:14px;white-space:normal;overflow:visible;text-overflow:clip}
     .hero-score{font-size:34px}
