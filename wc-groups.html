@@ -81,6 +81,17 @@ table.gt tbody td{padding:7px 5px;font-size:12px;text-align:center;color:#999}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .error-msg{background:#151515;border:1px solid #1e1e1e;border-radius:10px;padding:28px;text-align:center;color:#444;font-size:13px;grid-column:1/-1}
 .refresh-note{font-size:10px;color:#2a2a2a;text-align:right;margin-top:16px}
+
+/* Option A — post-group-stage banner */
+.ko-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.22);border-radius:10px;padding:13px 16px;margin-bottom:20px;text-decoration:none;transition:background .15s;cursor:pointer}
+.ko-banner:hover{background:rgba(34,197,94,.13)}
+.ko-banner-tag{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#22c55e;margin-bottom:3px}
+.ko-banner-msg{font-size:13px;font-weight:600;color:#f0f0f0}
+.ko-banner-arr{font-size:18px;color:#22c55e;flex-shrink:0}
+/* Option D — nav pulse on Bracket link when KO is underway */
+@keyframes bk-pulse{0%,100%{color:#22c55e}50%{color:#4ade80;text-shadow:0 0 8px rgba(34,197,94,.5)}}
+nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
+
 @media(max-width:600px){
     header{padding:0 16px}
     .logo-wordmark,.logo-ver{display:none}
@@ -103,6 +114,7 @@ table.gt tbody td{padding:7px 5px;font-size:12px;text-align:center;color:#999}
     <div class="page-title">Group Standings</div>
     <div class="page-sub">Top 2 from each group advance automatically · Best 8 third-place teams also advance</div>
 
+    <div id="ko-banner-wrap"></div>
     <div class="key">
         <div class="key-item"><div class="key-dot q-auto"></div>Advances (automatic)</div>
         <div class="key-item"><div class="key-dot q-pos"></div>Possible 3rd-place qualifier</div>
@@ -178,6 +190,10 @@ function groupCardHtml(g){
     </div>`;
 }
 
+function applyNavPulse(){
+    document.querySelectorAll('nav a[href="wc-bracket.html"]').forEach(a=>a.classList.add('bk-live'));
+}
+
 async function init(){
     try{
         const data=await loadJson('standings.json','wc_standings',120000);
@@ -196,11 +212,26 @@ async function init(){
         document.getElementById('refresh-note').textContent=upd
             ?`Data updated ${new Date(upd).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`
             :`Updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+
+        // Option A — banner + Option D — nav pulse when group stage is done
+        const complete=groups.length>0&&groups.every(g=>g.table.every(r=>r.playedGames>=3));
+        if(complete){
+            try{localStorage.setItem('ko_started','1');}catch{}
+            document.getElementById('ko-banner-wrap').innerHTML=
+                `<a href="wc-bracket.html" class="ko-banner">
+                    <div><div class="ko-banner-tag">Group stage complete</div>
+                    <div class="ko-banner-msg">The knockout bracket is underway</div></div>
+                    <span class="ko-banner-arr">→</span>
+                </a>`;
+            applyNavPulse();
+        }
     }catch(e){
         document.getElementById('groups-grid').innerHTML=
             `<div class="error-msg">Error loading standings: ${e.message}</div>`;
     }
 }
+// Apply nav pulse immediately if already known from a previous visit
+if(localStorage.getItem('ko_started')==='1')applyNavPulse();
 init();
 </script>
 </body>

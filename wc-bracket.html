@@ -40,13 +40,17 @@ main{max-width:1200px;margin:0 auto;padding:20px 0 60px}
 .pnl-lbl.now{color:#22c55e}
 .now-pip{font-size:8px;background:rgba(34,197,94,.15);color:#22c55e;padding:1px 6px;border-radius:4px;letter-spacing:.04em}
 
-.pnl-content{flex:1;overflow-y:auto;padding:0 16px;scrollbar-width:thin;scrollbar-color:#222 transparent;display:flex;flex-direction:column;gap:14px}
+.pnl-content{flex:1;overflow-y:auto;padding:0 16px;scrollbar-width:thin;scrollbar-color:#222 transparent;display:flex;flex-direction:column;gap:10px}
 
-/* Pair group */
-.pg{position:relative;margin-right:22px;display:flex;flex-direction:column;gap:0}
-.pg.has-conn::after{content:'';position:absolute;right:-14px;top:var(--conn-top,64px);height:var(--conn-height,110px);width:14px;border-top:1px solid #252525;border-right:1px solid #252525;border-bottom:1px solid #252525;pointer-events:none}
-.pg-date{font-size:9px;color:#3a3a3a;letter-spacing:.03em;margin-bottom:5px}
-.pg-gap{height:12px}
+/* Pair group — percentage-based connectors, no JS needed */
+.pg{position:relative;margin-right:22px;display:flex;flex-direction:column}
+.pg.has-conn::after{content:'';position:absolute;right:-14px;top:25%;height:50%;width:14px;border-top:1px solid #252525;border-right:1px solid #252525;border-bottom:1px solid #252525;pointer-events:none}
+/* Each slot is flex:1 inside .pg so both slots are equal height → connector
+   arms at 25%/75% of pair hit the vertical centre of each slot exactly */
+.pg-slot{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:60px;padding:3px 0;position:relative}
+.pg-slot.hl{padding-left:16px}
+.pg-slot.hl::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-0.5px);width:12px;height:0;border-top:1px solid #252525;pointer-events:none}
+.pg-date{font-size:9px;color:#3a3a3a;letter-spacing:.03em;margin-bottom:4px}
 
 /* Match container */
 .match{border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#151515}
@@ -109,6 +113,9 @@ main{max-width:1200px;margin:0 auto;padding:20px 0 60px}
     .logo-wordmark,.logo-ver{display:none}
     nav a{margin-left:14px;font-size:10px}
 }
+/* Option D — nav pulse when KO is underway (applied to other pages, not self) */
+@keyframes bk-pulse{0%,100%{color:#22c55e}50%{color:#4ade80;text-shadow:0 0 8px rgba(34,197,94,.55)}}
+nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </style>
 </head>
 <body>
@@ -220,28 +227,13 @@ function renderMatch(m){
     return`<div class="match${live?' match-live':''}">${trHtml('home',hScore,htbd)}${trHtml('away',aScore,atbd)}</div>`;
 }
 
-function renderPairGroup(m1,m2,hasConn){
+function renderPairGroup(m1,m2,hasConn,hasLeft){
     const hasBoth=!!(m1&&m2);
-    return`<div class="pg${hasConn&&hasBoth?' has-conn':''}">
-        <div class="pg-date">${matchDateLbl(m1)}</div>
-        ${renderMatch(m1)}
-        ${m2?`<div class="pg-gap"></div><div class="pg-date">${matchDateLbl(m2)}</div>${renderMatch(m2)}`:''}
-    </div>`;
+    const sc=hasLeft?' hl':'';
+    const mkSlot=m=>`<div class="pg-slot${sc}"><div class="pg-date">${matchDateLbl(m)}</div>${renderMatch(m)}</div>`;
+    return`<div class="pg${hasConn&&hasBoth?' has-conn':''}">${mkSlot(m1)}${m2?mkSlot(m2):''}</div>`;
 }
 
-function adjustConnectors(){
-    document.querySelectorAll('.pg.has-conn').forEach(pg=>{
-        const ms=pg.querySelectorAll('.match');
-        if(ms.length<2)return;
-        const pgTop=pg.getBoundingClientRect().top;
-        const r1=ms[0].getBoundingClientRect();
-        const r2=ms[1].getBoundingClientRect();
-        const top=(r1.top+r1.bottom)/2-pgTop;
-        const height=(r2.top+r2.bottom)/2-pgTop-top;
-        pg.style.setProperty('--conn-top',`${top}px`);
-        pg.style.setProperty('--conn-height',`${Math.max(height,0)}px`);
-    });
-}
 
 function normStage(s){
     return({ROUND_OF_32:'LAST_32',ROUND_OF_16:'LAST_16',QUARTERFINALS:'QUARTER_FINALS',SEMIFINALS:'SEMI_FINALS'})[s]||s;
@@ -258,18 +250,19 @@ function detectCurrentIdx(visKeys,byStage){
 
 function renderPanel(idx,stageKey,stageMeta,matches,isCur,thirdPlace){
     const hasNext=idx<_nPanels-1;
+    const hasLeft=idx>0;
     const pairs=[];
     for(let i=0;i<matches.length;i+=2) pairs.push([matches[i],matches[i+1]||null]);
 
     let pairsHtml=pairs.length
-        ?pairs.map(([m1,m2])=>renderPairGroup(m1,m2,hasNext)).join('')
+        ?pairs.map(([m1,m2])=>renderPairGroup(m1,m2,hasNext,hasLeft)).join('')
         :`<div class="pg-empty">Matches TBD</div>`;
 
     let thirdHtml='';
     if(stageKey==='FINAL'&&thirdPlace.length){
         thirdHtml=`<div class="third-lbl">3rd Place Playoff</div>`;
         for(let i=0;i<thirdPlace.length;i+=2)
-            thirdHtml+=renderPairGroup(thirdPlace[i],thirdPlace[i+1]||null,false);
+            thirdHtml+=renderPairGroup(thirdPlace[i],thirdPlace[i+1]||null,false,false);
     }
 
     return`<div class="bk-panel" id="bkp-${idx}">
@@ -364,7 +357,6 @@ function renderBracket(){
 
     go(_curIdx,false);
     initDrag();
-    requestAnimationFrame(()=>requestAnimationFrame(adjustConnectors));
 }
 
 const isMobile=()=>window.innerWidth<768;
@@ -436,7 +428,10 @@ async function init(){
         _allMatches=data.matches||[];
         if(scores)_liveScores=scores;
         renderBracket();
-        const koActive=_allMatches.filter(m=>STAGE_KEYS.has(normStage(m.stage))||THIRD_KEYS.has(normStage(m.stage))).some(m=>{
+        const koMatches=_allMatches.filter(m=>STAGE_KEYS.has(normStage(m.stage))||THIRD_KEYS.has(normStage(m.stage)));
+        const koUnderway=koMatches.some(m=>!['SCHEDULED','TIMED'].includes(m.status));
+        if(koUnderway)try{localStorage.setItem('ko_started','1');}catch{}
+        const koActive=koMatches.some(m=>{
             if(isLive(m))return true;
             const el=(Date.now()-new Date(m.utcDate))/60000;
             return el>=0&&el<200;
@@ -453,7 +448,6 @@ window.addEventListener('resize',()=>{
     const m=isMobile();
     if(m!==_wasMobile){_wasMobile=m;renderBracket();return;}
     if(m)go(_curIdx,false);
-    else requestAnimationFrame(adjustConnectors);
 });
 
 init();
