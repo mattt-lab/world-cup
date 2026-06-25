@@ -6,12 +6,11 @@ Writes:
   data/matches.json   — all competition matches
   data/standings.json — group stage standings
 
-Live scores are now fetched directly by the browser from ESPN's
-unofficial scoreboard API (no key, CORS-open), so they update every
-30 seconds during matches without waiting for this cron job.
+Live scores are fetched directly by the browser from ESPN's scoreboard
+API (no key, CORS-open) and are not handled here.
 
-Runs every 5 minutes via GitHub Actions; exits early when no match
-is active or imminent to save ~80% of API calls across the tournament.
+Runs every 5 minutes via GitHub Actions; exits early when no match is
+active or imminent to save API quota across the tournament.
 """
 
 import json
@@ -25,7 +24,7 @@ API_KEY = os.environ.get("FOOTBALL_DATA_API_KEY", "").strip()
 UA      = "WCDashboard/1.0 (+https://github.com/mattt-lab/world-cup)"
 
 PRE_MATCH_MIN  = 10
-POST_MATCH_MIN = 140
+POST_MATCH_MIN = 180  # 90 min + 30 ET + 25 penalties + ~35 FDO lag
 
 
 def in_match_window():
