@@ -318,6 +318,9 @@ function parseESPN(data){
 // Module-level state so the 30s ESPN timer can re-render without a full init
 let _currentMatches=[], _currentStandings=[], _liveScores={}, _liveUpdated=null;
 
+// Looks up ESPN data for a match — used by effectiveStatus/matchSt/winClass
+function espnFor(m){ return _liveScores[`${m.homeTeam?.tla}:${m.awayTeam?.tla}`]||null; }
+
 // ── Crest helpers ─────────────────────────────────────────────────────────────
 function crest(team,sz=34){
     const url=team?.crest,tla=team?.tla||'?';
@@ -337,11 +340,14 @@ function fmtTime(utc){return new Date(utc).toLocaleTimeString('en-US',{hour:'num
 
 // Correct for API lag: if a LIVE match started >130 min ago, treat as FINISHED
 function effectiveStatus(m){
+    // ESPN is the primary source — trust its state over FDO
+    const espn=espnFor(m);
+    if(espn?.state==='post') return'FINISHED';
+    if(espn?.state==='in')   return'IN_PLAY';
+    // ESPN not available: fall back to time-based heuristics on FDO status
     const elapsedMin=(Date.now()-new Date(m.utcDate))/60000;
-    // API hasn't flipped TIMED→IN_PLAY yet but kickoff has passed
     if((m.status==='TIMED'||m.status==='SCHEDULED')&&elapsedMin>3&&elapsedMin<=130)
         return'IN_PLAY';
-    // API hasn't flipped LIVE→FINISHED yet after full time
     if((m.status==='LIVE'||m.status==='IN_PLAY')&&elapsedMin>130)
         return'FINISHED';
     return m.status;
@@ -350,15 +356,30 @@ function isLive(m){ const s=effectiveStatus(m); return s==='LIVE'||s==='IN_PLAY'
 function isDone(m){ return DONE_ST.has(effectiveStatus(m)); }
 
 function matchSt(m){
-    const s=m.score?.fullTime;
+    const espn=espnFor(m);
     const eff=effectiveStatus(m);
-    if(DONE_ST.has(eff))    return{h:s?.home??'-',a:s?.away??'-',label:'FT',cls:'st-ft'};
-    if(eff==='LIVE')        return{h:s?.home??0, a:s?.away??0, label:'● LIVE',cls:'st-live'};
-    if(eff==='PAUSED')      return{h:s?.home??0, a:s?.away??0, label:'HT',cls:'st-ht'};
+    const h=espn?.homeScore??m.score?.fullTime?.home;
+    const a=espn?.awayScore??m.score?.fullTime?.away;
+    if(DONE_ST.has(eff)) return{h:h??'-',a:a??'-',label:'FT',cls:'st-ft'};
+    if(eff==='IN_PLAY'||eff==='LIVE'){
+        let liveLabel='● Live';
+        if(espn?.state==='in'&&espn?.clock&&espn.clock!=="0'"){
+            const half=espn.period===2?'2nd Half':'1st Half';
+            liveLabel=`● ${espn.clock} · ${half}`;
+        }
+        return{h:h??0,a:a??0,label:liveLabel,cls:'st-live'};
+    }
+    if(eff==='PAUSED') return{h:h??0,a:a??0,label:'HT',cls:'st-ht'};
     return{h:null,a:null,label:fmtTime(m.utcDate),cls:'st-soon'};
 }
 function winClass(m,side){
     if(!isDone(m))return'';
+    const espn=espnFor(m);
+    if(espn){
+        if(espn.homeScore===espn.awayScore)return'';
+        const homeWon=espn.homeScore>espn.awayScore;
+        return((side==='home'&&homeWon)||(side==='away'&&!homeWon))?'winner':'loser';
+    }
     const w=m.score?.winner;if(!w||w==='DRAW')return'';
     return((side==='home'&&w==='HOME_TEAM')||(side==='away'&&w==='AWAY_TEAM'))?'winner':'loser';
 }
@@ -402,9 +423,17 @@ function computeStakes(match, standingsArr){
     const grpLetter=(grpLabel||'').replace('Group ','');
 
     if(isDone(match)){
-        const w=match.score?.winner;
-        const winner=w==='HOME_TEAM'?hn:w==='AWAY_TEAM'?an:null;
-        const loser=winner===hn?an:winner===an?hn:null;
+        // Use ESPN scores to determine winner — FDO lags on this field
+        const espn=espnFor(match);
+        let winner=null,loser=null;
+        if(espn&&espn.homeScore!==espn.awayScore){
+            winner=espn.homeScore>espn.awayScore?hn:an;
+            loser=winner===hn?an:hn;
+        } else if(!espn){
+            const w=match.score?.winner;
+            if(w==='HOME_TEAM'){winner=hn;loser=an;}
+            else if(w==='AWAY_TEAM'){winner=an;loser=hn;}
+        }
         const s1=winner
             ?`${winner} took all three points in Group ${grpLetter}.`
             :`The sides shared the points in a draw in Group ${grpLetter}.`;
@@ -457,26 +486,19 @@ function computeLiveBlurb(match, standingsArr){
 }
 
 // ── Hero live card ────────────────────────────────────────────────────────────
-function liveHeroCard(m, standingsArr, liveScores, liveUpdated){
-    // Prefer ESPN live score; fall back to football-data.org score
-    const key=`${m.homeTeam?.tla}:${m.awayTeam?.tla}`;
-    const espn=liveScores?.[key];
-    const fdScore=m.score?.fullTime;
-    const h=espn?.homeScore??fdScore?.home??0;
-    const a=espn?.awayScore??fdScore?.away??0;
-
-    // Clock / status label — ESPN gives displayClock e.g. "67:23" or "45+2:00"
+function liveHeroCard(m, standingsArr){
+    const espn=espnFor(m);
+    const h=espn?.homeScore??m.score?.fullTime?.home??0;
+    const a=espn?.awayScore??m.score?.fullTime?.away??0;
     const isHT=m.status==='PAUSED'||espn?.detail?.toLowerCase().includes('half time');
     let statusLabel='● Live';
     if(isHT){
         statusLabel='Half Time';
     } else if(espn?.state==='in'&&espn?.clock&&espn.clock!=="0'"){
-        // ESPN clock is already formatted e.g. "20'", "45+2'" — use directly
         const half=espn.period===2?'2nd Half':'1st Half';
         statusLabel=`● ${espn.clock} · ${half}`;
     }
     const statusCls=isHT?'ht':'';
-
     const grp=m.group?`Group ${m.group.replace('GROUP_','')} · `:'';
     const lbl=STAGE_LABEL[m.stage]||m.stage;
     const md=m.matchday?` · Matchday ${m.matchday}`:'';
@@ -498,7 +520,7 @@ function liveHeroCard(m, standingsArr, liveScores, liveUpdated){
             <div class="hero-team away"><span class="hero-name">${an}</span>${heroCrest(m.awayTeam)}</div>
         </div>
         ${blurb?`<div class="hero-blurb">${blurb}</div>`:''}
-        <div class="hero-refresh">${fmtRefreshed(liveUpdated)}</div>
+        <div class="hero-refresh">${fmtRefreshed(_liveUpdated)}</div>
     </div>`;
 }
 
@@ -559,7 +581,7 @@ function groupByDay(ms){
     return[...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
 }
 
-function renderMatches(matches,standingsArr,liveScores,liveUpdated){
+function renderMatches(matches,standingsArr){
     const today=todayDay();
     const live=matches.filter(m=>isLive(m));
     const todayMs=matches.filter(m=>localDay(m.utcDate)===today);
@@ -567,7 +589,7 @@ function renderMatches(matches,standingsArr,liveScores,liveUpdated){
     if(live.length){
         document.getElementById('live-section').innerHTML=
             `<div class="section-label" style="color:#22c55e;margin-bottom:12px">Live Now</div>`+
-            live.map(m=>liveHeroCard(m,standingsArr,liveScores,liveUpdated)).join('')+
+            live.map(m=>liveHeroCard(m,standingsArr)).join('')+
             `<div style="height:24px"></div>`;
     } else {
         document.getElementById('live-section').innerHTML='';
@@ -620,25 +642,26 @@ async function refreshLiveSection(){
     if(!scores)return;
     _liveScores=scores;
     _liveUpdated=new Date().toISOString();
-    const live=_currentMatches.filter(m=>isLive(m));
-    if(!live.length)return;
-    document.getElementById('live-section').innerHTML=
-        `<div class="section-label" style="color:#22c55e;margin-bottom:12px">Live Now</div>`+
-        live.map(m=>liveHeroCard(m,_currentStandings,_liveScores,_liveUpdated)).join('')+
-        `<div style="height:24px"></div>`;
+    // Re-render everything — ESPN scores now flow into finished cards too
+    renderMatches(_currentMatches,_currentStandings);
 }
 
 function scheduleRefresh(matches){
     clearInterval(_matchTimer);
     clearInterval(_espnTimer);
-    if(matches.some(m=>isLive(m))){
-        // Full data refresh every 60s (matches.json + standings.json)
+    // Keep refreshing while any of today's matches are live or recently kicked off
+    // (covers extra time, rain delays, and post-match score lag up to ~3h 20min)
+    const anyActive=matches.some(m=>{
+        if(isLive(m))return true;
+        const elapsedMin=(Date.now()-new Date(m.utcDate))/60000;
+        return localDay(m.utcDate)===todayDay()&&elapsedMin>=0&&elapsedMin<200;
+    });
+    if(anyActive){
         _matchTimer=setInterval(async()=>{
             cacheSet('wc_matches',null,0);
             cacheSet('wc_standings',null,0);
             try{await init();}catch{}
         },60000);
-        // ESPN score refresh every 30s — browser fetches directly, no GH Actions lag
         _espnTimer=setInterval(refreshLiveSection,30000);
     }
 }
@@ -653,7 +676,7 @@ async function init(){
         const scores=await fetchESPN();
         if(scores){_liveScores=scores;_liveUpdated=new Date().toISOString();}
         renderPhase(_currentMatches);
-        renderMatches(_currentMatches,_currentStandings,_liveScores,_liveUpdated);
+        renderMatches(_currentMatches,_currentStandings);
         scheduleRefresh(_currentMatches);
         const upd=md._meta?.updated||sd._meta?.updated;
         document.getElementById('refresh-note').textContent=upd
