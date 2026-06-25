@@ -93,7 +93,7 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 60px}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v1.2</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v1.3</span></div>
     <nav>
         <a href="wc-dashboard.html">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -181,13 +181,42 @@ async function loadJson(file,key,ttl=120000){
     const d=await r.json();cacheSet(key,d,ttl);return d;
 }
 
+// ── ESPN live scores (browser fetches directly) ───────────────────────────────
+const ESPN_URL='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+async function fetchESPN(){
+    try{const r=await fetch(ESPN_URL);if(!r.ok)return null;return parseESPN(await r.json());}catch{return null;}
+}
+function parseESPN(data){
+    const out={};
+    for(const event of data?.events||[]){
+        const competitors=event.competitions?.[0]?.competitors||[];
+        const home=competitors.find(c=>c.homeAway==='home');
+        const away=competitors.find(c=>c.homeAway==='away');
+        if(!home||!away)continue;
+        const homeTla=home.team?.abbreviation,awayTla=away.team?.abbreviation;
+        if(!homeTla||!awayTla)continue;
+        const status=event.status||{},stType=status.type||{};
+        out[`${homeTla}:${awayTla}`]={
+            homeScore:parseInt(home.score||0),awayScore:parseInt(away.score||0),
+            state:stType.state||'',clock:status.displayClock||'',
+            period:status.period||1,detail:stType.shortDetail||'',
+        };
+    }
+    return out;
+}
+let _liveScores={};
+function espnFor(m){ return _liveScores[`${m.homeTeam?.tla}:${m.awayTeam?.tla}`]||null; }
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function localDay(utc){const d=new Date(utc);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function fmtDay(utc){return new Date(utc).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
 function fmtTime(utc){return new Date(utc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
+function todayDay(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 
-// Guard against API lag: treat LIVE matches started >130 min ago as FINISHED
 function effectiveStatus(m){
+    const espn=espnFor(m);
+    if(espn?.state==='post') return'FINISHED';
+    if(espn?.state==='in')   return'IN_PLAY';
     const elapsedMin=(Date.now()-new Date(m.utcDate))/60000;
     if((m.status==='TIMED'||m.status==='SCHEDULED')&&elapsedMin>3&&elapsedMin<=130)
         return'IN_PLAY';
@@ -197,15 +226,30 @@ function effectiveStatus(m){
 }
 
 function matchSt(m){
-    const s=m.score?.fullTime;
+    const espn=espnFor(m);
     const eff=effectiveStatus(m);
-    if(DONE_ST.has(eff))  return{h:s?.home??'-',a:s?.away??'-',label:'FT',cls:'st-ft',live:false};
-    if(eff==='LIVE')      return{h:s?.home??0, a:s?.away??0, label:'<span class="live-dot"></span>LIVE',cls:'st-live',live:true};
-    if(eff==='PAUSED')    return{h:s?.home??0, a:s?.away??0, label:'HT',cls:'st-ht',live:true};
+    const h=espn?.homeScore??m.score?.fullTime?.home;
+    const a=espn?.awayScore??m.score?.fullTime?.away;
+    if(DONE_ST.has(eff)) return{h:h??'-',a:a??'-',label:'FT',cls:'st-ft',live:false};
+    if(eff==='IN_PLAY'||eff==='LIVE'){
+        let lbl='<span class="live-dot"></span>LIVE';
+        if(espn?.state==='in'&&espn?.clock&&espn.clock!=="0'"){
+            const half=espn.period===2?'2nd':'1st';
+            lbl=`<span class="live-dot"></span>${espn.clock} · ${half}`;
+        }
+        return{h:h??0,a:a??0,label:lbl,cls:'st-live',live:true};
+    }
+    if(eff==='PAUSED') return{h:h??0,a:a??0,label:'HT',cls:'st-ht',live:true};
     return{h:null,a:null,label:fmtTime(m.utcDate),cls:'st-soon',live:false};
 }
 function winCls(m,side){
     if(!DONE_ST.has(effectiveStatus(m)))return'';
+    const espn=espnFor(m);
+    if(espn){
+        if(espn.homeScore===espn.awayScore)return'';
+        const homeWon=espn.homeScore>espn.awayScore;
+        return((side==='home'&&homeWon)||(side==='away'&&!homeWon))?'winner':'loser';
+    }
     const w=m.score?.winner;if(!w||w==='DRAW')return'';
     return((side==='home'&&w==='HOME_TEAM')||(side==='away'&&w==='AWAY_TEAM'))?'winner':'loser';
 }
@@ -226,7 +270,7 @@ function matchCard(m){
     const scoreHtml=h!==null?`<span>${h}</span><span class="score-sep">–</span><span>${a}</span>`:`<span class="score-vs">vs</span>`;
     const grpTxt=m.group?` · Grp ${m.group.replace('GROUP_','')}${m.matchday?` MD${m.matchday}`:''}`:m.matchday?` · MD${m.matchday}`:'';
     const cityTxt=VENUE[m.id]?` · ${VENUE[m.id]}`:'';
-    return`<div class="match-card ${live?'live-card':''} ${DONE_ST.has(m.status)?'finished-card':''}">
+    return`<div class="match-card ${live?'live-card':''} ${DONE_ST.has(effectiveStatus(m))?'finished-card':''}">
         <div class="match-team">${crest(ht,30)}${htTxt}</div>
         <div class="match-center">
             <div class="score-nums">${scoreHtml}</div>
@@ -239,7 +283,8 @@ function matchCard(m){
 
 // ── Phase detection ───────────────────────────────────────────────────────────
 function detectPhase(matches){
-    const started=new Set(matches.filter(m=>DONE_ST.has(m.status)||LIVE_ST.has(m.status)).map(m=>m.stage));
+    const eff=m=>effectiveStatus(m);
+    const started=new Set(matches.filter(m=>DONE_ST.has(eff(m))||LIVE_ST.has(eff(m))).map(m=>m.stage));
     for(const s of [...STAGE_ORDER].reverse())if(started.has(s))return s;
     for(const s of STAGE_ORDER)if(matches.some(m=>m.stage===s))return s;
     return'GROUP_STAGE';
@@ -328,11 +373,17 @@ function setFilter(f){
     renderMatches();
 }
 
+let _espnTimer=null;
+async function refreshESPN(){
+    const scores=await fetchESPN();
+    if(scores){_liveScores=scores;renderMatches();}
+}
+
 async function init(){
     try{
-        const data=await loadJson('matches.json','wc_matches',120000);
+        const[data,scores]=await Promise.all([loadJson('matches.json','wc_matches',120000),fetchESPN()]);
         allMatches=(data.matches||[]).sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
-        // Default to the current phase
+        if(scores)_liveScores=scores;
         activeFilter=detectPhase(allMatches);
         renderFilterBar();
         renderMatches();
@@ -340,6 +391,13 @@ async function init(){
         document.getElementById('refresh-note').textContent=upd
             ?`Data updated ${new Date(upd).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`
             :`Updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+        // Keep ESPN scores live for today's matches up to ~3h 20min after kickoff
+        clearInterval(_espnTimer);
+        const anyActive=allMatches.some(m=>{
+            const e=(Date.now()-new Date(m.utcDate))/60000;
+            return localDay(m.utcDate)===todayDay()&&e>=0&&e<200;
+        });
+        if(anyActive) _espnTimer=setInterval(refreshESPN,30000);
     }catch(e){
         document.getElementById('matches-list').innerHTML=`<div class="error-msg">Error loading schedule: ${e.message}</div>`;
     }
