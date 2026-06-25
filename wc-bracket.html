@@ -86,11 +86,23 @@ main{max-width:1200px;margin:0 auto;padding:20px 0 60px}
 
 @media(min-width:768px){
     main{padding:20px 16px 60px}
-    .bk-car{overflow-x:auto;scrollbar-width:thin;scrollbar-color:#1a1a1a transparent}
-    .bk-trk{gap:8px}
-    .bk-panel{flex:0 0 240px;max-width:240px}
-    .pnl-content{overflow-y:visible}
+    .bk-rounds{display:none}
     .bk-nav{display:none}
+    .bk-car{overflow-x:auto;overflow-y:visible;padding-bottom:24px}
+    /* Desktop bracket grid */
+    .bk-grid{display:flex;align-items:stretch;min-width:700px}
+    .bk-col{flex:1;min-width:170px;display:flex;flex-direction:column;overflow:visible}
+    .bk-col-hdr{height:30px;display:flex;align-items:center;padding:0 8px 0 24px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#3a3a3a;border-bottom:1px solid #1a1a1a;flex-shrink:0}
+    .bk-col-hdr.cur{color:#22c55e}
+    .bk-slots{flex:1;display:flex;flex-direction:column;overflow:visible}
+    .bk-pair{flex:1;display:flex;flex-direction:column;position:relative;overflow:visible}
+    .bk-pair.hr::after{content:'';position:absolute;right:-20px;top:25%;height:50%;width:20px;border-top:1px solid #272727;border-right:1px solid #272727;border-bottom:1px solid #272727;pointer-events:none;z-index:2}
+    .bk-slot{flex:1;display:flex;align-items:center;padding:4px 6px 4px 24px;position:relative;overflow:visible}
+    .bk-slot.hl::before{content:'';position:absolute;left:4px;top:50%;transform:translateY(-0.5px);width:20px;height:0;border-top:1px solid #272727;pointer-events:none;z-index:1}
+    .bk-slot-body{width:100%}
+    .bk-match-date{font-size:9px;color:#333;letter-spacing:.03em;margin-bottom:3px}
+    .bk-grid .tr{height:34px}
+    .bk-third{padding:16px 0;margin-top:8px;border-top:1px solid #1a1a1a;max-width:210px}
 }
 @media(max-width:767px){
     header{padding:0 16px}
@@ -268,6 +280,39 @@ function renderPanel(idx,stageKey,stageMeta,matches,isCur,thirdPlace){
     </div>`;
 }
 
+function renderGrid(visStages,byStage,thirdPlace){
+    const firstCount=byStage[visStages[0].key].length;
+    const slotH=90,hdrH=30;
+    const gridH=firstCount*slotH+hdrH;
+    const nCols=visStages.length;
+    let colsHtml='';
+    for(let ci=0;ci<nCols;ci++){
+        const stage=visStages[ci];
+        const matches=byStage[stage.key];
+        const hasRight=ci<nCols-1;
+        const hasLeft=ci>0;
+        const isCur=ci===_curIdx;
+        let slotsHtml='';
+        for(let pi=0;pi<matches.length;pi+=2){
+            const m1=matches[pi],m2=matches[pi+1]||null;
+            const sc=hasLeft?' hl':'';
+            const mkSlot=(m)=>m
+                ?`<div class="bk-slot${sc}"><div class="bk-slot-body"><div class="bk-match-date">${matchDateLbl(m)}</div>${renderMatch(m)}</div></div>`
+                :`<div class="bk-slot${sc}"><div class="bk-slot-body"></div></div>`;
+            slotsHtml+=`<div class="bk-pair${hasRight?' hr':''}">${mkSlot(m1)}${mkSlot(m2)}</div>`;
+        }
+        colsHtml+=`<div class="bk-col">
+            <div class="bk-col-hdr${isCur?' cur':''}">${stage.label}${isCur?` <span class="now-pip">● Now</span>`:''}</div>
+            <div class="bk-slots">${slotsHtml}</div>
+        </div>`;
+    }
+    let thirdHtml='';
+    if(thirdPlace.length){
+        thirdHtml=`<div class="bk-third"><div class="third-lbl" style="text-align:left;padding:0 0 8px;border:none">3rd Place Playoff</div>${renderMatch(thirdPlace[0])}</div>`;
+    }
+    return`<div class="bk-grid" style="height:${gridH}px">${colsHtml}</div>${thirdHtml}`;
+}
+
 function renderBracket(){
     const byStage={};
     STAGES.forEach(s=>{byStage[s.key]=[];});
@@ -291,6 +336,11 @@ function renderBracket(){
 
     _nPanels=visStages.length;
     _curIdx=detectCurrentIdx(visStages.map(s=>s.key),byStage);
+
+    if(!isMobile()){
+        document.getElementById('bk-root').innerHTML=`<div class="bk-car" id="bk-car">${renderGrid(visStages,byStage,thirdPlace)}</div>`;
+        return;
+    }
 
     const pillsHtml=visStages.map((s,i)=>{
         const cls=i<_curIdx?'done':i===_curIdx?'cur':'';
@@ -398,9 +448,12 @@ async function init(){
     }
 }
 
+let _wasMobile=isMobile();
 window.addEventListener('resize',()=>{
-    if(isMobile())go(_curIdx,false);
-    requestAnimationFrame(adjustConnectors);
+    const m=isMobile();
+    if(m!==_wasMobile){_wasMobile=m;renderBracket();return;}
+    if(m)go(_curIdx,false);
+    else requestAnimationFrame(adjustConnectors);
 });
 
 init();
