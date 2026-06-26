@@ -89,8 +89,6 @@ main{max-width:1200px;margin:0 auto;padding:20px 0 60px}
                    border-top:1px solid #3a3a3a;border-right:1px solid #3a3a3a;border-bottom:1px solid #3a3a3a;
                    pointer-events:none;z-index:2}
 .bk-slot{flex:1;display:flex;align-items:center;padding:4px 6px 4px 24px;position:relative;overflow:visible}
-.bk-pair.hl::before{content:'';position:absolute;left:4px;top:50%;transform:translateY(-0.5px);
-                    width:20px;height:0;border-top:1px solid #3a3a3a;pointer-events:none;z-index:1}
 .bk-slot-body{width:100%}
 .bk-match-date{font-size:9px;color:#333;letter-spacing:.03em;margin-bottom:3px}
 .bk-grid .tr{height:34px}
@@ -100,7 +98,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 0 60px}
     main{padding:20px 16px 60px}
     .bk-rounds{display:none}
     .bk-nav{display:none}
-    .bk-car{padding:0 0 24px 0;scroll-snap-type:none}
+    .bk-car{padding:0 0 24px 0;scroll-snap-type:none;overflow:visible}
     .bk-col{flex:1;width:auto;min-width:170px;scroll-snap-align:none}
     .bk-grid{min-width:700px}
 }
@@ -254,7 +252,7 @@ function renderGrid(visStages,byStage,thirdPlace){
             const mkSlot=(m)=>m
                 ?`<div class="bk-slot"><div class="bk-slot-body"><div class="bk-match-date">${matchDateLbl(m)}</div>${renderMatch(m)}</div></div>`
                 :`<div class="bk-slot"><div class="bk-slot-body"></div></div>`;
-            slotsHtml+=`<div class="bk-pair${hasRight?' hr':''}${hasLeft?' hl':''}">${mkSlot(m1)}${mkSlot(m2)}</div>`;
+            slotsHtml+=`<div class="bk-pair${hasRight?' hr':''}">${mkSlot(m1)}${mkSlot(m2)}</div>`;
         }
         const thirdInCol=(ci===nCols-1&&thirdPlace.length)
             ?`<div class="bk-third"><div class="third-lbl" style="text-align:left;padding:0 0 8px;border:none">3rd Place Playoff</div>${renderMatch(thirdPlace[0])}</div>`
