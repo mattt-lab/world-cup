@@ -89,7 +89,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 0 60px}
                    border-top:1px solid #3a3a3a;border-right:1px solid #3a3a3a;border-bottom:1px solid #3a3a3a;
                    pointer-events:none;z-index:2}
 .bk-slot{flex:1;display:flex;align-items:center;padding:4px 6px 4px 24px;position:relative;overflow:visible}
-.bk-slot.hl::before{content:'';position:absolute;left:4px;top:50%;transform:translateY(-0.5px);
+.bk-pair.hl::before{content:'';position:absolute;left:4px;top:50%;transform:translateY(-0.5px);
                     width:20px;height:0;border-top:1px solid #3a3a3a;pointer-events:none;z-index:1}
 .bk-slot-body{width:100%}
 .bk-match-date{font-size:9px;color:#333;letter-spacing:.03em;margin-bottom:3px}
@@ -251,22 +251,21 @@ function renderGrid(visStages,byStage,thirdPlace){
         let slotsHtml='';
         for(let pi=0;pi<matches.length;pi+=2){
             const m1=matches[pi],m2=matches[pi+1]||null;
-            const sc=hasLeft?' hl':'';
             const mkSlot=(m)=>m
-                ?`<div class="bk-slot${sc}"><div class="bk-slot-body"><div class="bk-match-date">${matchDateLbl(m)}</div>${renderMatch(m)}</div></div>`
-                :`<div class="bk-slot${sc}"><div class="bk-slot-body"></div></div>`;
-            slotsHtml+=`<div class="bk-pair${hasRight?' hr':''}">${mkSlot(m1)}${mkSlot(m2)}</div>`;
+                ?`<div class="bk-slot"><div class="bk-slot-body"><div class="bk-match-date">${matchDateLbl(m)}</div>${renderMatch(m)}</div></div>`
+                :`<div class="bk-slot"><div class="bk-slot-body"></div></div>`;
+            slotsHtml+=`<div class="bk-pair${hasRight?' hr':''}${hasLeft?' hl':''}">${mkSlot(m1)}${mkSlot(m2)}</div>`;
         }
+        const thirdInCol=(ci===nCols-1&&thirdPlace.length)
+            ?`<div class="bk-third"><div class="third-lbl" style="text-align:left;padding:0 0 8px;border:none">3rd Place Playoff</div>${renderMatch(thirdPlace[0])}</div>`
+            :'';
         colsHtml+=`<div class="bk-col" id="bk-col-${ci}" data-col-idx="${ci}">
             <div class="bk-col-hdr${isCur?' cur':''}">${stage.label}${isCur?` <span class="now-pip">● Now</span>`:''}</div>
             <div class="bk-slots">${slotsHtml}</div>
+            ${thirdInCol}
         </div>`;
     }
-    let thirdHtml='';
-    if(thirdPlace.length){
-        thirdHtml=`<div class="bk-third"><div class="third-lbl" style="text-align:left;padding:0 0 8px;border:none">3rd Place Playoff</div>${renderMatch(thirdPlace[0])}</div>`;
-    }
-    return`<div class="bk-grid" style="height:${gridH}px">${colsHtml}</div>${thirdHtml}`;
+    return`<div class="bk-grid" style="height:${gridH}px">${colsHtml}</div>`;
 }
 
 let _visStages=[];
