@@ -114,7 +114,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v1.8</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v1.9</span></div>
     <nav>
         <a href="wc-dashboard.html">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -458,7 +458,7 @@ async function init(){
             if(!em)return m;
             const home=(m.homeTeam?.name||m.homeTeam?.tla)?m.homeTeam:addCrest(em.homeTeam);
             const away=(m.awayTeam?.name||m.awayTeam?.tla)?m.awayTeam:addCrest(em.awayTeam);
-            const venue=em.venue?.city?em.venue:m.venue;
+            const venue=(em.venue?.city||em.venue?.name)?em.venue:m.venue;
             return{...m,homeTeam:home,awayTeam:away,venue};
         });
         if(scores)_liveScores=scores;
