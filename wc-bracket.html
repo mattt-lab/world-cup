@@ -114,7 +114,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v1.7</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v1.8</span></div>
     <nav>
         <a href="wc-dashboard.html">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -437,6 +437,15 @@ async function init(){
             fetchESPNBracket(),
             fetchESPN()
         ]);
+        // Build TLA→crest from group stage where FDO has full team data
+        const crestByTla={};
+        for(const m of data.matches||[]){
+            for(const t of[m.homeTeam,m.awayTeam]){
+                if(t?.tla&&t?.crest)crestByTla[t.tla]=t.crest;
+            }
+        }
+        const addCrest=t=>t&&t.tla&&!t.crest?{...t,crest:crestByTla[t.tla]||null}:t;
+
         const espnByTime={};
         for(const m of espnMatches||[]){
             const k=(m.utcDate||'').slice(0,16);
@@ -447,8 +456,8 @@ async function init(){
             if(!STAGE_KEYS.has(s)&&!THIRD_KEYS.has(s))return m;
             const em=espnByTime[(m.utcDate||'').slice(0,16)];
             if(!em)return m;
-            const home=(m.homeTeam?.name||m.homeTeam?.tla)?m.homeTeam:em.homeTeam;
-            const away=(m.awayTeam?.name||m.awayTeam?.tla)?m.awayTeam:em.awayTeam;
+            const home=(m.homeTeam?.name||m.homeTeam?.tla)?m.homeTeam:addCrest(em.homeTeam);
+            const away=(m.awayTeam?.name||m.awayTeam?.tla)?m.awayTeam:addCrest(em.awayTeam);
             const venue=em.venue?.city?em.venue:m.venue;
             return{...m,homeTeam:home,awayTeam:away,venue};
         });
