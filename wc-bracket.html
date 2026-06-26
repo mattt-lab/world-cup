@@ -114,7 +114,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v1.9</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.0</span></div>
     <nav>
         <a href="wc-dashboard.html">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -355,72 +355,22 @@ async function loadJson(file,key,ttl=120000){
 }
 
 async function fetchESPNBracket(){
+    // Return raw ESPN events — stage detection is unreliable; we match by kickoff time instead
     try{
         const r=await fetch(ESPN_KO_URL);
         if(!r.ok)return null;
         const d=await r.json();
-        const matches=parseESPNBracket(d.events||[]);
-        return matches.length?matches:null;
+        return d.events?.length?d.events:null;
     }catch{return null;}
 }
 
-function espnStageStr(ev){
-    const comp=ev.competitions?.[0];
-    // Try several fields ESPN uses for round name
-    const candidates=[
-        comp?.notes?.[0]?.headline,
-        comp?.groups?.name,
-        comp?.groups?.abbreviation,
-        ev.name,
-    ];
-    for(const c of candidates){
-        if(!c)continue;
-        const n=c.toLowerCase();
-        if(n.includes('round of 32'))return'LAST_32';
-        if(n.includes('round of 16'))return'LAST_16';
-        if(n.includes('quarter'))return'QUARTER_FINALS';
-        if(n.includes('semi'))return'SEMI_FINALS';
-        if(n.includes('third')||n.includes('3rd place'))return'THIRD_PLACE';
-        if(n.includes('final'))return'FINAL';
-    }
-    return null;
-}
-
-function parseESPNBracket(events){
-    const out=[];
-    for(const ev of events){
-        const stage=espnStageStr(ev);
-        if(!stage)continue;
-        const comp=ev.competitions?.[0];
-        const home=comp?.competitors?.find(c=>c.homeAway==='home');
-        const away=comp?.competitors?.find(c=>c.homeAway==='away');
-        const mkTeam=c=>{
-            const tla=c?.team?.abbreviation||null;
-            const name=c?.team?.displayName||null;
-            // ESPN uses placeholder names like "RD32 W1" for unresolved bracket slots
-            const isTbd=!name||!tla||!/^[A-Z]{2,4}$/.test(tla)||/^\w+\s+W\d+$/i.test(name);
-            if(isTbd)return{name:null,shortName:null,tla:null,crest:null};
-            return{name,shortName:c.team.shortDisplayName||name,tla,
-                   crest:c.team.logos?.[0]?.href||null};
-        };
-        const done=comp?.status?.type?.completed;
-        let winner=null;
-        if(done){if(home?.winner)winner='HOME_TEAM';else if(away?.winner)winner='AWAY_TEAM';}
-        const espnSt=comp?.status?.type?.name||'';
-        let status='SCHEDULED';
-        if(espnSt.includes('FINAL')||espnSt.includes('FULL_TIME'))status='FINISHED';
-        else if(espnSt.includes('PROGRESS')||espnSt.includes('IN_PLAY'))status='IN_PLAY';
-        else if(espnSt.includes('HALF'))status='PAUSED';
-        out.push({
-            id:ev.id,utcDate:ev.date,stage,status,
-            homeTeam:mkTeam(home),awayTeam:mkTeam(away),
-            score:{winner,fullTime:{
-                home:home?.score!=null?parseInt(home.score):null,
-                away:away?.score!=null?parseInt(away.score):null}},
-            venue:{name:comp?.venue?.fullName,city:comp?.venue?.address?.city||comp?.venue?.city}
-        });
-    }
-    return out;
+function mkTeamFromESPN(c){
+    const tla=c?.team?.abbreviation||null;
+    const name=c?.team?.displayName||null;
+    // Filter placeholder names: "Group I 2nd Place", "Round of 32 3 Winner", "3RD", "RD32", etc.
+    if(!name||!tla||!/^[A-Z]{2,4}$/.test(tla))return null;
+    return{name,shortName:c.team.shortDisplayName||name,tla,
+           crest:c.team.logos?.[0]?.href||null};
 }
 
 async function refreshESPN(){
@@ -446,19 +396,27 @@ async function init(){
         }
         const addCrest=t=>t&&t.tla&&!t.crest?{...t,crest:crestByTla[t.tla]||null}:t;
 
+        // Key raw ESPN events by kickoff time — no stage detection needed
         const espnByTime={};
-        for(const m of espnMatches||[]){
-            const k=(m.utcDate||'').slice(0,16);
-            if(k)espnByTime[k]=m;
+        for(const ev of espnMatches||[]){
+            const k=(ev.date||'').slice(0,16);
+            if(k)espnByTime[k]=ev;
         }
         _allMatches=(data.matches||[]).map(m=>{
             const s=normStage(m.stage);
             if(!STAGE_KEYS.has(s)&&!THIRD_KEYS.has(s))return m;
-            const em=espnByTime[(m.utcDate||'').slice(0,16)];
-            if(!em)return m;
-            const home=(m.homeTeam?.name||m.homeTeam?.tla)?m.homeTeam:addCrest(em.homeTeam);
-            const away=(m.awayTeam?.name||m.awayTeam?.tla)?m.awayTeam:addCrest(em.awayTeam);
-            const venue=(em.venue?.city||em.venue?.name)?em.venue:m.venue;
+            const ev=espnByTime[(m.utcDate||'').slice(0,16)];
+            if(!ev)return m;
+            const comp=ev.competitions?.[0];
+            const hComp=comp?.competitors?.find(c=>c.homeAway==='home');
+            const aComp=comp?.competitors?.find(c=>c.homeAway==='away');
+            const emHome=mkTeamFromESPN(hComp);
+            const emAway=mkTeamFromESPN(aComp);
+            const home=(m.homeTeam?.name||m.homeTeam?.tla)?m.homeTeam:(emHome?addCrest(emHome):m.homeTeam);
+            const away=(m.awayTeam?.name||m.awayTeam?.tla)?m.awayTeam:(emAway?addCrest(emAway):m.awayTeam);
+            const vCity=comp?.venue?.address?.city||comp?.venue?.city;
+            const vName=comp?.venue?.fullName;
+            const venue=(vCity||vName)?{name:vName,city:vCity}:m.venue;
             return{...m,homeTeam:home,awayTeam:away,venue};
         });
         if(scores)_liveScores=scores;
