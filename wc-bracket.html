@@ -114,7 +114,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v1.6</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v1.7</span></div>
     <nav>
         <a href="wc-dashboard.html">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -191,7 +191,7 @@ function winSide(m){
 function fmtTime(d){return new Date(d).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).replace(':00 ',' ');}
 function fmtDate(d){return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
 function matchDateLbl(m){
-    const v=m.venue?.name||m.venue?.city||'';
+    const v=m.venue?.city||m.venue?.name||'';
     return v?`${fmtDate(m.utcDate)} · ${v}`:fmtDate(m.utcDate);
 }
 function teamName(t){return t?.shortName||t?.name||t?.tla||'TBD';}
@@ -216,7 +216,7 @@ function renderMatch(m){
         const t=side==='home'?m.homeTeam:m.awayTeam;
         let right='';
         if(done||live) right=`<span class="tr-score">${score??0}</span>`;
-        else if(!tbd)  right=`<span class="tr-time">${fmtTime(m.utcDate)}</span>`;
+        else if(!tbd&&side==='home') right=`<span class="tr-time">${fmtTime(m.utcDate)}</span>`;
         return`<div class="${cls}"><span class="tr-flag">${tbd?'':crestHtml(t)}</span><span class="tr-name">${tbd?'TBD':teamName(t)}</span>${right}</div>`;
     }
     return`<div class="match${live?' match-live':''}">${trHtml('home',hScore,htbd)}${trHtml('away',aScore,atbd)}</div>`;
@@ -394,12 +394,15 @@ function parseESPNBracket(events){
         const comp=ev.competitions?.[0];
         const home=comp?.competitors?.find(c=>c.homeAway==='home');
         const away=comp?.competitors?.find(c=>c.homeAway==='away');
-        const mkTeam=c=>(!c||!c.team?.displayName)
-            ?{name:null,shortName:null,tla:null,crest:null}
-            :{name:c.team.displayName,
-              shortName:c.team.shortDisplayName||c.team.displayName,
-              tla:c.team.abbreviation||null,
-              crest:c.team.logos?.[0]?.href||null};
+        const mkTeam=c=>{
+            const tla=c?.team?.abbreviation||null;
+            const name=c?.team?.displayName||null;
+            // ESPN uses placeholder names like "RD32 W1" for unresolved bracket slots
+            const isTbd=!name||!tla||!/^[A-Z]{2,4}$/.test(tla)||/^\w+\s+W\d+$/i.test(name);
+            if(isTbd)return{name:null,shortName:null,tla:null,crest:null};
+            return{name,shortName:c.team.shortDisplayName||name,tla,
+                   crest:c.team.logos?.[0]?.href||null};
+        };
         const done=comp?.status?.type?.completed;
         let winner=null;
         if(done){if(home?.winner)winner='HOME_TEAM';else if(away?.winner)winner='AWAY_TEAM';}
@@ -414,7 +417,7 @@ function parseESPNBracket(events){
             score:{winner,fullTime:{
                 home:home?.score!=null?parseInt(home.score):null,
                 away:away?.score!=null?parseInt(away.score):null}},
-            venue:{name:comp?.venue?.fullName,city:comp?.venue?.address?.city}
+            venue:{name:comp?.venue?.fullName,city:comp?.venue?.address?.city||comp?.venue?.city}
         });
     }
     return out;
@@ -427,14 +430,28 @@ async function refreshESPN(){
 
 async function init(){
     try{
-        // Fetch ESPN bracket + live scores in parallel; fall back to static JSON
-        const[espnMatches,scores]=await Promise.all([fetchESPNBracket(),fetchESPN()]);
-        if(espnMatches?.length){
-            _allMatches=espnMatches;
-        }else{
-            const data=await loadJson('matches.json','wc_matches_bk',120000);
-            _allMatches=data.matches||[];
+        // matches.json is the backbone (all stages including Final/3P with null teams).
+        // ESPN overlay fills in teams as groups are decided, matched by kickoff time.
+        const[data,espnMatches,scores]=await Promise.all([
+            loadJson('matches.json','wc_matches_bk',120000),
+            fetchESPNBracket(),
+            fetchESPN()
+        ]);
+        const espnByTime={};
+        for(const m of espnMatches||[]){
+            const k=(m.utcDate||'').slice(0,16);
+            if(k)espnByTime[k]=m;
         }
+        _allMatches=(data.matches||[]).map(m=>{
+            const s=normStage(m.stage);
+            if(!STAGE_KEYS.has(s)&&!THIRD_KEYS.has(s))return m;
+            const em=espnByTime[(m.utcDate||'').slice(0,16)];
+            if(!em)return m;
+            const home=(m.homeTeam?.name||m.homeTeam?.tla)?m.homeTeam:em.homeTeam;
+            const away=(m.awayTeam?.name||m.awayTeam?.tla)?m.awayTeam:em.awayTeam;
+            const venue=em.venue?.city?em.venue:m.venue;
+            return{...m,homeTeam:home,awayTeam:away,venue};
+        });
         if(scores)_liveScores=scores;
         renderBracket();
         const koMatches=_allMatches.filter(m=>STAGE_KEYS.has(normStage(m.stage))||THIRD_KEYS.has(normStage(m.stage)));
