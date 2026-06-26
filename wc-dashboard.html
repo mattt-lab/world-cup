@@ -117,7 +117,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.0</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.1</span></div>
     <nav>
         <a href="wc-dashboard.html" class="active">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -350,10 +350,8 @@ function effectiveStatus(m){
     if(espn?.state==='in')   return'IN_PLAY';
     // ESPN not available: fall back to time-based heuristics on FDO status
     const elapsedMin=(Date.now()-new Date(m.utcDate))/60000;
-    if((m.status==='TIMED'||m.status==='SCHEDULED')&&elapsedMin>3&&elapsedMin<=130)
-        return'IN_PLAY';
-    if((m.status==='LIVE'||m.status==='IN_PLAY')&&elapsedMin>130)
-        return'FINISHED';
+    if(elapsedMin>130)return'FINISHED';
+    if(elapsedMin>3)return'IN_PLAY';
     return m.status;
 }
 function isLive(m){ const s=effectiveStatus(m); return s==='LIVE'||s==='IN_PLAY'||s==='PAUSED'; }
