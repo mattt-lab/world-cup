@@ -96,7 +96,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.1</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.2</span></div>
     <nav>
         <a href="wc-dashboard.html">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -200,10 +200,13 @@ function parseESPN(data){
         const homeTla=home.team?.abbreviation,awayTla=away.team?.abbreviation;
         if(!homeTla||!awayTla)continue;
         const status=event.status||{},stType=status.type||{};
+        const rawCity=event.competitions?.[0]?.venue?.address?.city||'';
+        const city=rawCity.includes(',')?rawCity.split(',')[0].trim():rawCity;
         out[`${homeTla}:${awayTla}`]={
             homeScore:parseInt(home.score||0),awayScore:parseInt(away.score||0),
             state:stType.state||'',clock:status.displayClock||'',
             period:status.period||1,detail:stType.shortDetail||'',
+            city,
         };
     }
     return out;
@@ -271,7 +274,8 @@ function matchCard(m){
     const atTxt=at?.name?`<span class="team-txt ${winCls(m,'away')}">${at.shortName||at.name}</span>`:`<span class="team-tbd">TBD</span>`;
     const scoreHtml=h!==null?`<span>${h}</span><span class="score-sep">–</span><span>${a}</span>`:`<span class="score-vs">vs</span>`;
     const grpTxt=m.group?` · Grp ${m.group.replace('GROUP_','')}${m.matchday?` MD${m.matchday}`:''}`:m.matchday?` · MD${m.matchday}`:'';
-    const cityTxt=VENUE[m.id]?` · ${VENUE[m.id]}`:'';
+    const espn=espnFor(m);
+    const cityTxt=(espn?.city||VENUE[m.id]||'')?` · ${espn?.city||VENUE[m.id]}`:'';
     return`<div class="match-card ${live?'live-card':''} ${DONE_ST.has(effectiveStatus(m))?'finished-card':''}">
         <div class="match-team">${crest(ht,30)}${htTxt}</div>
         <div class="match-center">

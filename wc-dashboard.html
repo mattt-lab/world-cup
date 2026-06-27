@@ -117,7 +117,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.1</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.2</span></div>
     <nav>
         <a href="wc-dashboard.html" class="active">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -307,6 +307,8 @@ function parseESPN(data){
         if(!homeTla||!awayTla)continue;
         const status=event.status||{};
         const stType=status.type||{};
+        const rawCity=event.competitions?.[0]?.venue?.address?.city||'';
+        const city=rawCity.includes(',')?rawCity.split(',')[0].trim():rawCity;
         out[`${homeTla}:${awayTla}`]={
             homeScore:parseInt(home.score||0),
             awayScore:parseInt(away.score||0),
@@ -314,6 +316,7 @@ function parseESPN(data){
             clock:status.displayClock||'',
             period:status.period||1,
             detail:stType.shortDetail||'',
+            city,
         };
     }
     return out;
@@ -504,7 +507,8 @@ function liveHeroCard(m, standingsArr){
     const grp=m.group?`Group ${m.group.replace('GROUP_','')} · `:'';
     const lbl=STAGE_LABEL[m.stage]||m.stage;
     const md=m.matchday?` · Matchday ${m.matchday}`:'';
-    const city=VENUE[m.id]?` · ${VENUE[m.id]}`:'';
+    const cityStr=espn?.city||VENUE[m.id]||'';
+    const city=cityStr?` · ${cityStr}`:'';
     const hn=m.homeTeam?.name?m.homeTeam.shortName||m.homeTeam.name:'TBD';
     const an=m.awayTeam?.name?m.awayTeam.shortName||m.awayTeam.name:'TBD';
     const blurb=computeLiveBlurb(m,standingsArr);
@@ -536,7 +540,9 @@ function matchCard(m, blurb, isNext=false){
     const grp=m.group?`Grp ${m.group.replace('GROUP_','')} · `:'';
     const lbl=STAGE_LABEL[m.stage]||m.stage;
     const md=m.matchday?` MD${m.matchday}`:'';
-    const city=VENUE[m.id]?` · ${VENUE[m.id]}`:'';
+    const espn=espnFor(m);
+    const cityStr=espn?.city||VENUE[m.id]||'';
+    const city=cityStr?` · ${cityStr}`:'';
     const blurbHtml=blurb?`<div class="match-blurb">${blurb}</div>`:'';
     const grpAnchor=m.group?`#group-${m.group.replace('GROUP_','').toLowerCase()}`:'';
     const cardCls=[isDone(m)?'finished-card':'',isNext?'next-up-card':''].filter(Boolean).join(' ');
