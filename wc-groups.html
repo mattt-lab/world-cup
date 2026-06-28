@@ -101,7 +101,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.0</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.4</span></div>
     <nav>
         <a href="wc-dashboard.html">Today</a>
         <a href="wc-groups.html" class="active">Groups</a>
@@ -140,7 +140,24 @@ async function loadJson(file,key,ttl=120000){
 
 function gdStr(n){return n>0?`+${n}`:String(n)}
 function gdCls(n){return n>0?'gd-pos':n<0?'gd-neg':''}
-function rowCls(i){return i===0?'row-q1':i===1?'row-q2':i===2?'row-q3':'row-q4'}
+function rowCls(i,teamId,qual3rdIds){
+    if(i===0)return'row-q1';
+    if(i===1)return'row-q2';
+    if(i===2)return qual3rdIds?(qual3rdIds.has(teamId)?'row-q3':'row-q4'):'row-q3';
+    return'row-q4';
+}
+function getQualifying3rd(groups){
+    const thirds=groups
+        .map(g=>g.table.find(r=>r.position===3))
+        .filter(Boolean)
+        .sort((a,b)=>{
+            if(b.points!==a.points)return b.points-a.points;
+            const gdA=a.goalsFor-a.goalsAgainst,gdB=b.goalsFor-b.goalsAgainst;
+            if(gdB!==gdA)return gdB-gdA;
+            return b.goalsFor-a.goalsFor;
+        });
+    return new Set(thirds.slice(0,8).map(r=>r.team.id));
+}
 
 function crestCell(team){
     if(team?.crest){
@@ -149,13 +166,12 @@ function crestCell(team){
     return`<div class="crest-box"><span class="ctla">${team?.tla||'?'}</span></div>`;
 }
 
-function groupCardHtml(g){
-    // g.group is "Group A" format from standings API
+function groupCardHtml(g,qual3rdIds){
     const letter=g.group.replace('Group ','');
     const played=g.table.reduce((s,r)=>s+r.playedGames,0);
 
     const rows=g.table.map((row,i)=>`
-    <tr class="${rowCls(i)}">
+    <tr class="${rowCls(i,row.team?.id,qual3rdIds)}">
         <td class="td-team" style="padding-left:0">
             <div class="team-cell">
                 <div class="pos-bar"></div>
@@ -207,14 +223,20 @@ async function init(){
                 '<div class="error-msg">Group stage standings not yet available.</div>';
             return;
         }
-        document.getElementById('groups-grid').innerHTML=groups.map(groupCardHtml).join('');
+        const complete=groups.length>0&&groups.every(g=>g.table.every(r=>r.playedGames>=3));
+        const qual3rdIds=complete?getQualifying3rd(groups):null;
+        document.getElementById('groups-grid').innerHTML=groups.map(g=>groupCardHtml(g,qual3rdIds)).join('');
+        if(complete){
+            document.querySelector('.key').innerHTML=`
+                <div class="key-item"><div class="key-dot q-auto"></div>Advances (automatic)</div>
+                <div class="key-item"><div class="key-dot q-pos"></div>Advances as 3rd-place qualifier</div>
+                <div class="key-item"><div class="key-dot q-out"></div>Eliminated</div>`;
+        }
         const upd=data._meta?.updated;
         document.getElementById('refresh-note').textContent=upd
             ?`Data updated ${new Date(upd).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`
             :`Updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
 
-        // Option A — banner + Option D — nav pulse when group stage is done
-        const complete=groups.length>0&&groups.every(g=>g.table.every(r=>r.playedGames>=3));
         if(complete){
             try{localStorage.setItem('ko_started','1');}catch{}
             document.getElementById('ko-banner-wrap').innerHTML=
