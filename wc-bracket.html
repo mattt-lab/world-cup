@@ -114,7 +114,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.4</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.5</span></div>
     <nav>
         <a href="wc-dashboard.html">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -188,6 +188,9 @@ function winSide(m){
     if(w==='HOME_TEAM')return'home';if(w==='AWAY_TEAM')return'away';return'draw';
 }
 
+const CITY_NORM={'East Rutherford':'New York','Arlington':'Dallas','Inglewood':'Los Angeles',
+    'Foxborough':'Boston','Miami Gardens':'Miami','Guadalupe':'Monterrey','Santa Clara':'San Francisco'};
+function normCity(raw){const c=raw.includes(',')?raw.split(',')[0].trim():raw;return CITY_NORM[c]||c;}
 function fmtTime(d){return new Date(d).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).replace(':00 ',' ');}
 function fmtDate(d){return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
 function matchDateLbl(m){
@@ -421,7 +424,7 @@ async function init(){
             const home=(m.homeTeam?.name||m.homeTeam?.tla)?m.homeTeam:(emHome?addCrest(emHome):m.homeTeam);
             const away=(m.awayTeam?.name||m.awayTeam?.tla)?m.awayTeam:(emAway?addCrest(emAway):m.awayTeam);
             const rawCity=comp?.venue?.address?.city||comp?.venue?.city||'';
-            const vCity=rawCity.includes(',')?rawCity.split(',')[0].trim():rawCity;
+            const vCity=normCity(rawCity);
             const vName=comp?.venue?.fullName;
             const venue=(vCity||vName)?{name:vName,city:vCity}:m.venue;
             return{...m,homeTeam:home,awayTeam:away,venue};

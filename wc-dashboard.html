@@ -117,7 +117,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.3</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.4</span></div>
     <nav>
         <a href="wc-dashboard.html" class="active">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -295,6 +295,9 @@ async function fetchESPN(){
         return parseESPN(await r.json());
     }catch{return null;}
 }
+const CITY_NORM={'East Rutherford':'New York','Arlington':'Dallas','Inglewood':'Los Angeles',
+    'Foxborough':'Boston','Miami Gardens':'Miami','Guadalupe':'Monterrey','Santa Clara':'San Francisco'};
+function normCity(raw){const c=raw.includes(',')?raw.split(',')[0].trim():raw;return CITY_NORM[c]||c;}
 function parseESPN(data){
     const out={};
     for(const event of data?.events||[]){
@@ -308,7 +311,7 @@ function parseESPN(data){
         const status=event.status||{};
         const stType=status.type||{};
         const rawCity=event.competitions?.[0]?.venue?.address?.city||'';
-        const city=rawCity.includes(',')?rawCity.split(',')[0].trim():rawCity;
+        const city=normCity(rawCity);
         out[`${homeTla}:${awayTla}`]={
             homeScore:parseInt(home.score||0),
             awayScore:parseInt(away.score||0),

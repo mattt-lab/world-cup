@@ -213,6 +213,9 @@ function mkTeamFromESPN(c){
     if(!name||!tla||!/^[A-Z]{2,4}$/.test(tla))return null;
     return{name,shortName:c.team.shortDisplayName||name,tla,crest:c.team.logos?.[0]?.href||null};
 }
+const CITY_NORM={'East Rutherford':'New York','Arlington':'Dallas','Inglewood':'Los Angeles',
+    'Foxborough':'Boston','Miami Gardens':'Miami','Guadalupe':'Monterrey','Santa Clara':'San Francisco'};
+function normCity(raw){const c=raw.includes(',')?raw.split(',')[0].trim():raw;return CITY_NORM[c]||c;}
 function parseESPN(data){
     const out={};
     for(const event of data?.events||[]){
@@ -224,7 +227,7 @@ function parseESPN(data){
         if(!homeTla||!awayTla)continue;
         const status=event.status||{},stType=status.type||{};
         const rawCity=event.competitions?.[0]?.venue?.address?.city||'';
-        const city=rawCity.includes(',')?rawCity.split(',')[0].trim():rawCity;
+        const city=normCity(rawCity);
         out[`${homeTla}:${awayTla}`]={
             homeScore:parseInt(home.score||0),awayScore:parseInt(away.score||0),
             state:stType.state||'',clock:status.displayClock||'',
@@ -437,7 +440,7 @@ async function init(){
                 const home=(m.homeTeam?.name||m.homeTeam?.tla)?m.homeTeam:(emHome?addCrest(emHome):m.homeTeam);
                 const away=(m.awayTeam?.name||m.awayTeam?.tla)?m.awayTeam:(emAway?addCrest(emAway):m.awayTeam);
                 const rawCity=comp?.venue?.address?.city||comp?.venue?.city||'';
-                const vCity=rawCity.includes(',')?rawCity.split(',')[0].trim():rawCity;
+                const vCity=normCity(rawCity);
                 const venue=(vCity||comp?.venue?.fullName)?{name:comp?.venue?.fullName,city:vCity}:m.venue;
                 return{...m,homeTeam:home,awayTeam:away,venue};
             });
