@@ -145,6 +145,20 @@ const STAGES=[
 const STAGE_KEYS=new Set(STAGES.map(s=>s.key));
 const THIRD_KEYS=new Set(['THIRD_PLACE','THIRD_PLACE_MATCH']);
 
+// FDO match IDs in the correct bracket draw order.
+// R32: pairs (W1,W3),(W2,W5),(W4,W6),(W7,W8),(W9,W10),(W11,W12),(W13,W15),(W14,W16)
+// — each pair's winners meet in the corresponding R16 slot.
+const R32_BRACKET=[537417,537418, 537423,537424, 537415,537425, 537416,537422,
+                   537421,537426, 537419,537420, 537429,537427, 537428,537430];
+// R16 slot order: Houston, Philadelphia, New York, Mexico City, Seattle, Dallas, Atlanta, Vancouver
+const R16_BRACKET=[537376,537375, 537377,537378, 537380,537379, 537381,537382];
+function bracketSort(ids){
+    return(a,b)=>{
+        const ai=ids.indexOf(a.id),bi=ids.indexOf(b.id);
+        return(ai<0?9999:ai)-(bi<0?9999:bi)||new Date(a.utcDate)-new Date(b.utcDate);
+    };
+}
+
 let _liveScores={},_allMatches=[],_curIdx=0,_nPanels=0,_espnTimer=null;
 
 async function fetchESPN(){
@@ -282,7 +296,10 @@ function renderBracket(){
         if(THIRD_KEYS.has(s))thirdPlace.push(m);
         else if(byStage[s])byStage[s].push(m);
     }
-    STAGES.forEach(s=>byStage[s.key].sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate)));
+    STAGES.forEach(s=>{
+        const ids=s.key==='LAST_32'?R32_BRACKET:s.key==='LAST_16'?R16_BRACKET:null;
+        byStage[s.key].sort(ids?bracketSort(ids):(a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
+    });
     thirdPlace.sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
 
     _visStages=STAGES.filter(s=>byStage[s.key].length>0);
