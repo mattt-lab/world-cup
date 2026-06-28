@@ -117,7 +117,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.2</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.3</span></div>
     <nav>
         <a href="wc-dashboard.html" class="active">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -399,9 +399,19 @@ function fmtRefreshed(updatedStr){
 
 // ── Phase detection ───────────────────────────────────────────────────────────
 function detectPhase(matches){
-    const started=new Set(matches.filter(m=>isDone(m)||isLive(m)).map(m=>m.stage));
-    for(const s of [...STAGE_ORDER].reverse())if(started.has(s))return s;
-    for(const s of STAGE_ORDER)if(matches.some(m=>m.stage===s))return s;
+    // Live match wins immediately
+    const liveM=matches.find(m=>isLive(m));
+    if(liveM)return liveM.stage;
+    // Next upcoming match — show what's coming next even if previous stage just ended
+    const now=Date.now();
+    const upcoming=matches.filter(m=>new Date(m.utcDate)>now&&!isDone(m));
+    if(upcoming.length){
+        const next=upcoming.reduce((a,b)=>new Date(a.utcDate)<new Date(b.utcDate)?a:b);
+        return next.stage;
+    }
+    // All done — return stage of most-recently-played match
+    const done=matches.filter(m=>isDone(m));
+    if(done.length)return done.reduce((a,b)=>new Date(a.utcDate)>new Date(b.utcDate)?a:b).stage;
     return'GROUP_STAGE';
 }
 function detectMatchday(matches,stage){
