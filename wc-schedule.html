@@ -96,7 +96,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.2</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.5</span></div>
     <nav>
         <a href="wc-dashboard.html">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -187,8 +187,31 @@ async function loadJson(file,key,ttl=120000){
 
 // ── ESPN live scores (browser fetches directly) ───────────────────────────────
 const ESPN_URL='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+const KO_STAGES=new Set(['LAST_32','LAST_16','QUARTER_FINALS','SEMI_FINALS','THIRD_PLACE','FINAL']);
+
 async function fetchESPN(){
     try{const r=await fetch(ESPN_URL);if(!r.ok)return null;return parseESPN(await r.json());}catch{return null;}
+}
+
+async function fetchESPNBracket(){
+    const BASE=ESPN_URL.split('?')[0];
+    const RANGES=['20260628-20260630','20260701-20260703','20260704-20260708',
+                  '20260709-20260713','20260714-20260720'];
+    try{
+        const results=await Promise.all(
+            RANGES.map(d=>fetch(`${BASE}?dates=${d}&limit=50`).then(r=>r.ok?r.json():null).catch(()=>null))
+        );
+        const evs=[];
+        for(const data of results)for(const ev of data?.events||[])evs.push(ev);
+        return evs.length?evs:null;
+    }catch{return null;}
+}
+
+function mkTeamFromESPN(c){
+    const tla=c?.team?.abbreviation||null;
+    const name=c?.team?.displayName||null;
+    if(!name||!tla||!/^[A-Z]{2,4}$/.test(tla))return null;
+    return{name,shortName:c.team.shortDisplayName||name,tla,crest:c.team.logos?.[0]?.href||null};
 }
 function parseESPN(data){
     const out={};
@@ -275,7 +298,7 @@ function matchCard(m){
     const scoreHtml=h!==null?`<span>${h}</span><span class="score-sep">–</span><span>${a}</span>`:`<span class="score-vs">vs</span>`;
     const grpTxt=m.group?` · Grp ${m.group.replace('GROUP_','')}${m.matchday?` MD${m.matchday}`:''}`:m.matchday?` · MD${m.matchday}`:'';
     const espn=espnFor(m);
-    const cityTxt=(espn?.city||VENUE[m.id]||'')?` · ${espn?.city||VENUE[m.id]}`:'';
+    const cityTxt=(espn?.city||m.venue?.city||VENUE[m.id]||'')?` · ${espn?.city||m.venue?.city||VENUE[m.id]}`:'';
     return`<div class="match-card ${live?'live-card':''} ${DONE_ST.has(effectiveStatus(m))?'finished-card':''}">
         <div class="match-team">${crest(ht,30)}${htTxt}</div>
         <div class="match-center">
@@ -387,8 +410,37 @@ async function refreshESPN(){
 
 async function init(){
     try{
-        const[data,scores]=await Promise.all([loadJson('matches.json','wc_matches',120000),fetchESPN()]);
-        allMatches=(data.matches||[]).sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
+        const[data,espnEvs,scores]=await Promise.all([
+            loadJson('matches.json','wc_matches',120000),
+            fetchESPNBracket(),
+            fetchESPN()
+        ]);
+        // Build TLA→crest from group stage where FDO has full team data
+        const crestByTla={};
+        for(const m of data.matches||[]){
+            for(const t of[m.homeTeam,m.awayTeam])if(t?.tla&&t?.crest)crestByTla[t.tla]=t.crest;
+        }
+        const addCrest=t=>t&&t.tla&&!t.crest?{...t,crest:crestByTla[t.tla]||null}:t;
+        const espnByTime={};
+        for(const ev of espnEvs||[]){const k=(ev.date||'').slice(0,16);if(k)espnByTime[k]=ev;}
+
+        allMatches=(data.matches||[])
+            .sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate))
+            .map(m=>{
+                if(!KO_STAGES.has(m.stage))return m;
+                const ev=espnByTime[(m.utcDate||'').slice(0,16)];
+                if(!ev)return m;
+                const comp=ev.competitions?.[0];
+                const hComp=comp?.competitors?.find(c=>c.homeAway==='home');
+                const aComp=comp?.competitors?.find(c=>c.homeAway==='away');
+                const emHome=mkTeamFromESPN(hComp),emAway=mkTeamFromESPN(aComp);
+                const home=(m.homeTeam?.name||m.homeTeam?.tla)?m.homeTeam:(emHome?addCrest(emHome):m.homeTeam);
+                const away=(m.awayTeam?.name||m.awayTeam?.tla)?m.awayTeam:(emAway?addCrest(emAway):m.awayTeam);
+                const rawCity=comp?.venue?.address?.city||comp?.venue?.city||'';
+                const vCity=rawCity.includes(',')?rawCity.split(',')[0].trim():rawCity;
+                const venue=(vCity||comp?.venue?.fullName)?{name:comp?.venue?.fullName,city:vCity}:m.venue;
+                return{...m,homeTeam:home,awayTeam:away,venue};
+            });
         if(scores)_liveScores=scores;
         activeFilter=detectPhase(allMatches);
         renderFilterBar();
