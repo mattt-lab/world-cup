@@ -313,6 +313,7 @@ function parseESPN(data){
         const rawCity=event.competitions?.[0]?.venue?.address?.city||'';
         const city=normCity(rawCity);
         out[`${homeTla}:${awayTla}`]={
+            espnEventId:event.id,
             homeScore:parseInt(home.score||0),
             awayScore:parseInt(away.score||0),
             state:stType.state||'',
@@ -326,10 +327,75 @@ function parseESPN(data){
 }
 
 // Module-level state so the 30s ESPN timer can re-render without a full init
-let _currentMatches=[], _currentStandings=[], _liveScores={}, _liveUpdated=null;
+let _currentMatches=[], _currentStandings=[], _liveScores={}, _liveUpdated=null, _summaryMap={};
 
 // Looks up ESPN data for a match — used by effectiveStatus/matchSt/winClass
 function espnFor(m){ return _liveScores[`${m.homeTeam?.tla}:${m.awayTeam?.tla}`]||null; }
+
+// ── ESPN match summaries ──────────────────────────────────────────────────────
+const ESPN_SUMMARY='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary';
+function parseESPNSummary(data){
+    const goals=[];
+    for(const play of data?.scoringPlays||[]){
+        const name=play.athletes?.[0]?.shortDisplayName||play.athletes?.[0]?.displayName||play.text||'';
+        const minute=play.clock?.displayValue||'';
+        const team=play.team?.abbreviation||'';
+        if(name)goals.push({name,minute,team});
+    }
+    const possession={};
+    for(const side of data?.boxscore?.teams||[]){
+        const tla=side.team?.abbreviation;
+        const p=side.statistics?.find(s=>s.name==='possessionPct');
+        if(tla&&p)possession[tla]=p.displayValue;
+    }
+    return{goals,possession};
+}
+async function fetchESPNSummaries(matches){
+    const toFetch=matches.filter(m=>isDone(m)&&espnFor(m)?.espnEventId&&!_summaryMap[m.id]);
+    await Promise.allSettled(toFetch.map(async m=>{
+        try{
+            const r=await fetch(`${ESPN_SUMMARY}?event=${espnFor(m).espnEventId}`);
+            if(r.ok)_summaryMap[m.id]=parseESPNSummary(await r.json());
+        }catch{}
+    }));
+}
+function computeRecapBlurb(match){
+    const hn=match.homeTeam?.shortName||match.homeTeam?.name||'Home';
+    const an=match.awayTeam?.shortName||match.awayTeam?.name||'Away';
+    const espn=espnFor(match);
+    const h=espn?.homeScore??match.score?.fullTime?.home;
+    const a=espn?.awayScore??match.score?.fullTime?.away;
+    const summary=_summaryMap[match.id];
+    const parts=[];
+    if(h!=null&&a!=null){
+        if(h===a){
+            parts.push(h===0?`${hn} and ${an} played out a goalless draw.`:`${hn} and ${an} drew ${h}–${a}.`);
+        }else{
+            const[wn,ln,wg,lg]=h>a?[hn,an,h,a]:[an,hn,a,h];
+            parts.push(lg===0?`${wn} kept a clean sheet in a ${wg}–0 win over ${ln}.`:`${wn} beat ${ln} ${wg}–${lg}.`);
+        }
+    }
+    if(summary){
+        if(summary.goals.length){
+            const hg=summary.goals.filter(g=>g.team===match.homeTeam?.tla);
+            const ag=summary.goals.filter(g=>g.team===match.awayTeam?.tla);
+            const fmt=g=>g.minute?`${g.name} (${g.minute})`:g.name;
+            const gp=[];
+            if(hg.length)gp.push(`${hn}: ${hg.map(fmt).join(', ')}`);
+            if(ag.length)gp.push(`${an}: ${ag.map(fmt).join(', ')}`);
+            if(gp.length)parts.push(gp.join('; ')+'.');
+        }
+        const htla=match.homeTeam?.tla;
+        const poss=summary.possession[htla];
+        if(poss&&poss!=='0'&&poss!=='50')parts.push(`${hn} had ${poss}% possession.`);
+    }else{
+        const hs=getSpotlight(match.homeTeam);
+        const as_=getSpotlight(match.awayTeam);
+        if(hs)parts.push(hs);
+        if(as_)parts.push(as_);
+    }
+    return parts.join(' ');
+}
 
 // ── Crest helpers ─────────────────────────────────────────────────────────────
 function crest(team,sz=34){
@@ -491,8 +557,9 @@ function computeStakes(match, standingsArr){
     return'';
 }
 
-// Blurb for regular match cards: stakes for group stage, player spotlights for KO
+// Blurb for regular match cards: recap for finished, stakes/spotlights for upcoming
 function computeCardBlurb(match, standingsArr){
+    if(isDone(match)) return computeRecapBlurb(match);
     if(match.stage==='GROUP_STAGE') return computeStakes(match,standingsArr);
     const parts=[];
     const hs=getSpotlight(match.homeTeam);
@@ -674,7 +741,7 @@ async function refreshLiveSection(){
     if(!scores)return;
     _liveScores=scores;
     _liveUpdated=new Date().toISOString();
-    // Re-render everything — ESPN scores now flow into finished cards too
+    await fetchESPNSummaries(_currentMatches);
     renderMatches(_currentMatches,_currentStandings);
 }
 
@@ -707,6 +774,7 @@ async function init(){
         // Fetch ESPN directly — fresh score data every init, no GH Actions dependency
         const scores=await fetchESPN();
         if(scores){_liveScores=scores;_liveUpdated=new Date().toISOString();}
+        await fetchESPNSummaries(_currentMatches);
         renderPhase(_currentMatches);
         renderMatches(_currentMatches,_currentStandings);
         scheduleRefresh(_currentMatches);
