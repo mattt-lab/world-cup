@@ -21,6 +21,7 @@ jobs:
         run: python scripts/fetch_data.py
         env:
           FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Commit if changed
         run: |
