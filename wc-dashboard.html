@@ -491,6 +491,17 @@ function computeStakes(match, standingsArr){
     return'';
 }
 
+// Blurb for regular match cards: stakes for group stage, player spotlights for KO
+function computeCardBlurb(match, standingsArr){
+    if(match.stage==='GROUP_STAGE') return computeStakes(match,standingsArr);
+    const parts=[];
+    const hs=getSpotlight(match.homeTeam);
+    const as_=getSpotlight(match.awayTeam);
+    if(hs)parts.push(hs);
+    if(as_)parts.push(as_);
+    return parts.join(' ');
+}
+
 // Long blurb for live hero: stakes + both player spotlights
 function computeLiveBlurb(match, standingsArr){
     const parts=[];
@@ -627,11 +638,11 @@ function renderMatches(matches,standingsArr){
         if(upcoming.length){
             html+=`<div class="subsec-label green">Coming up</div>`;
             const nextKickoff=upcoming[0].utcDate;
-            html+=upcoming.map(m=>matchCard(m,computeStakes(m,standingsArr),m.utcDate===nextKickoff)).join('');
+            html+=upcoming.map(m=>matchCard(m,computeCardBlurb(m,standingsArr),m.utcDate===nextKickoff)).join('');
         }
         if(finished.length){
             html+=`<div class="subsec-label" style="margin-top:${upcoming.length?'18px':'4px'}">Earlier today</div>`;
-            html+=finished.map(m=>matchCard(m,computeStakes(m,standingsArr))).join('');
+            html+=finished.map(m=>matchCard(m,computeCardBlurb(m,standingsArr))).join('');
         }
         el.innerHTML=html;
         return;
@@ -643,13 +654,13 @@ function renderMatches(matches,standingsArr){
     if(recent.length){
         html+=`<div class="section-label">Recent Results</div>`;
         for(const[,ms] of groupByDay(recent.slice(0,12)).slice(0,2)){
-            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(m=>matchCard(m,computeStakes(m,standingsArr))).join('');
+            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(m=>matchCard(m,computeCardBlurb(m,standingsArr))).join('');
         }
     }
     if(upcoming.length){
         html+=`<div class="section-label" style="margin-top:${recent.length?'28px':'0'}">Coming Up</div>`;
         for(const[,ms] of groupByDay(upcoming.slice(0,12)).slice(0,2)){
-            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(m=>matchCard(m,computeStakes(m,standingsArr))).join('');
+            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(m=>matchCard(m,computeCardBlurb(m,standingsArr))).join('');
         }
     }
     el.innerHTML=html||'<div class="error-msg">No matches found.</div>';
