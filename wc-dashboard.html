@@ -350,22 +350,35 @@ function parseESPNSummary(data){
     }
     return{goals,possession};
 }
-async function fetchESPNSummaries(matches){
-    const toFetch=matches.filter(m=>isDone(m)&&espnFor(m)?.espnEventId&&!_summaryMap[m.id]);
+async function fetchSummaries(matches){
+    const toFetch=matches.filter(m=>isDone(m)&&!_summaryMap[m.id]);
     await Promise.allSettled(toFetch.map(async m=>{
+        // Try server-generated recap first (Claude summary committed by cron)
         try{
-            const r=await fetch(`${ESPN_SUMMARY}?event=${espnFor(m).espnEventId}`);
+            const r=await fetch(`data/summaries/${m.id}.json`);
+            if(r.ok){
+                const d=await r.json();
+                if(d.status==='complete'&&d.recap){_summaryMap[m.id]={serverRecap:d.recap};return;}
+            }
+        }catch{}
+        // Fall back to ESPN summary endpoint for structured data
+        const eid=espnFor(m)?.espnEventId;
+        if(!eid)return;
+        try{
+            const r=await fetch(`${ESPN_SUMMARY}?event=${eid}`);
             if(r.ok)_summaryMap[m.id]=parseESPNSummary(await r.json());
         }catch{}
     }));
 }
 function computeRecapBlurb(match){
+    const summary=_summaryMap[match.id];
+    // Server-generated Claude recap — use it directly
+    if(summary?.serverRecap)return summary.serverRecap;
     const hn=match.homeTeam?.shortName||match.homeTeam?.name||'Home';
     const an=match.awayTeam?.shortName||match.awayTeam?.name||'Away';
     const espn=espnFor(match);
     const h=espn?.homeScore??match.score?.fullTime?.home;
     const a=espn?.awayScore??match.score?.fullTime?.away;
-    const summary=_summaryMap[match.id];
     const parts=[];
     if(h!=null&&a!=null){
         if(h===a){
@@ -741,7 +754,7 @@ async function refreshLiveSection(){
     if(!scores)return;
     _liveScores=scores;
     _liveUpdated=new Date().toISOString();
-    await fetchESPNSummaries(_currentMatches);
+    await fetchSummaries(_currentMatches);
     renderMatches(_currentMatches,_currentStandings);
 }
 
@@ -774,7 +787,7 @@ async function init(){
         // Fetch ESPN directly — fresh score data every init, no GH Actions dependency
         const scores=await fetchESPN();
         if(scores){_liveScores=scores;_liveUpdated=new Date().toISOString();}
-        await fetchESPNSummaries(_currentMatches);
+        await fetchSummaries(_currentMatches);
         renderPhase(_currentMatches);
         renderMatches(_currentMatches,_currentStandings);
         scheduleRefresh(_currentMatches);
