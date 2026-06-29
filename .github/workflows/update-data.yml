@@ -26,7 +26,7 @@ jobs:
         run: |
           git config user.name  "WC Data Bot"
           git config user.email "actions@github.com"
-          git add data/matches.json data/standings.json data/summaries/
+          git add data/matches.json data/standings.json data/summaries/ data/previews/
           if git diff --staged --quiet; then
             echo "No changes — skipping commit"
           else

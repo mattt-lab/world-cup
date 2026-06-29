@@ -327,7 +327,7 @@ function parseESPN(data){
 }
 
 // Module-level state so the 30s ESPN timer can re-render without a full init
-let _currentMatches=[], _currentStandings=[], _liveScores={}, _liveUpdated=null, _summaryMap={};
+let _currentMatches=[], _currentStandings=[], _liveScores={}, _liveUpdated=null, _summaryMap={}, _previewMap={};
 
 // Looks up ESPN data for a match — used by effectiveStatus/matchSt/winClass
 function espnFor(m){ return _liveScores[`${m.homeTeam?.tla}:${m.awayTeam?.tla}`]||null; }
@@ -349,6 +349,15 @@ function parseESPNSummary(data){
         if(tla&&p)possession[tla]=p.displayValue;
     }
     return{goals,possession};
+}
+async function fetchPreviews(matches){
+    const toFetch=matches.filter(m=>!isDone(m)&&!isLive(m)&&!_previewMap[m.id]);
+    await Promise.allSettled(toFetch.map(async m=>{
+        try{
+            const r=await fetch(`data/previews/${m.id}.json`);
+            if(r.ok){const d=await r.json();if(d.status==='complete'&&d.preview)_previewMap[m.id]=d.preview;}
+        }catch{}
+    }));
 }
 async function fetchSummaries(matches){
     const toFetch=matches.filter(m=>isDone(m)&&!_summaryMap[m.id]);
@@ -570,9 +579,10 @@ function computeStakes(match, standingsArr){
     return'';
 }
 
-// Blurb for regular match cards: recap for finished, stakes/spotlights for upcoming
+// Blurb for regular match cards: recap for finished, preview/stakes/spotlights for upcoming
 function computeCardBlurb(match, standingsArr){
     if(isDone(match)) return computeRecapBlurb(match);
+    if(_previewMap[match.id]) return _previewMap[match.id];
     if(match.stage==='GROUP_STAGE') return computeStakes(match,standingsArr);
     const parts=[];
     const hs=getSpotlight(match.homeTeam);
@@ -754,7 +764,7 @@ async function refreshLiveSection(){
     if(!scores)return;
     _liveScores=scores;
     _liveUpdated=new Date().toISOString();
-    await fetchSummaries(_currentMatches);
+    await Promise.all([fetchPreviews(_currentMatches),fetchSummaries(_currentMatches)]);
     renderMatches(_currentMatches,_currentStandings);
 }
 
@@ -787,7 +797,7 @@ async function init(){
         // Fetch ESPN directly — fresh score data every init, no GH Actions dependency
         const scores=await fetchESPN();
         if(scores){_liveScores=scores;_liveUpdated=new Date().toISOString();}
-        await fetchSummaries(_currentMatches);
+        await Promise.all([fetchPreviews(_currentMatches),fetchSummaries(_currentMatches)]);
         renderPhase(_currentMatches);
         renderMatches(_currentMatches,_currentStandings);
         scheduleRefresh(_currentMatches);

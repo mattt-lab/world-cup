@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
 fetch_data.py — Fetch 2026 World Cup data from football-data.org, and
-generate AI match recaps for finished games using the Claude API.
+generate AI match previews and recaps using the Claude API.
 
 Writes:
   data/matches.json          — all competition matches
   data/standings.json        — group stage standings
-  data/summaries/<id>.json   — Claude-generated match recap (one per match)
+  data/previews/<id>.json    — Claude-generated pre-match preview (one per match)
+  data/summaries/<id>.json   — Claude-generated post-match recap (one per match)
 
 Live scores are fetched directly by the browser from ESPN's scoreboard
 API (no key, CORS-open) and are not handled here.
@@ -34,10 +35,27 @@ CLAUDE_MODEL   = "claude-haiku-4-5-20251001"
 ESPN_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard"
 ESPN_SUMMARY    = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary"
 SUMMARIES_DIR   = Path("data/summaries")
+PREVIEWS_DIR    = Path("data/previews")
 
-ARTICLE_TIMEOUT_H = 1.0   # give up waiting for ESPN article after this long
+ARTICLE_TIMEOUT_H = 1.0   # give up waiting for ESPN recap article after this long
+PREVIEW_WINDOW_H  = 36    # generate previews for matches within this many hours
 PRE_MATCH_MIN     = 10
 POST_MATCH_MIN    = 180   # 90 min + 30 ET + 25 penalties + ~35 FDO lag
+
+STAGE_LABEL = {
+    "LAST_32":        "Round of 32",
+    "LAST_16":        "Round of 16",
+    "QUARTER_FINALS": "Quarterfinals",
+    "SEMI_FINALS":    "Semifinals",
+    "THIRD_PLACE":    "3rd Place Playoff",
+    "FINAL":          "Final",
+}
+NEXT_ROUND = {
+    "LAST_32":        "the Round of 16",
+    "LAST_16":        "the Quarterfinals",
+    "QUARTER_FINALS": "the Semifinals",
+    "SEMI_FINALS":    "the Final",
+}
 
 
 # ── Window check ──────────────────────────────────────────────────────────────
@@ -88,6 +106,19 @@ def in_match_window():
                         return True
             except Exception:
                 pass
+
+    # Stay active if any upcoming match within the preview window has no preview yet
+    for m in data.get("matches", []):
+        if m.get("status") not in ("SCHEDULED", "TIMED"):
+            continue
+        try:
+            kickoff = datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00"))
+        except (KeyError, ValueError):
+            continue
+        hours_until = (kickoff - now).total_seconds() / 3600
+        if 0 < hours_until <= PREVIEW_WINDOW_H:
+            if not (PREVIEWS_DIR / f"{m['id']}.json").exists():
+                return True
 
     return False
 
@@ -222,6 +253,109 @@ def generate_recap(content, is_article):
     return call_claude(prompt)
 
 
+# ── Preview generation ───────────────────────────────────────────────────────
+
+def build_preview_prompt(match, standings_list, espn_summary=None):
+    hn    = match.get("homeTeam", {}).get("shortName") or match.get("homeTeam", {}).get("name", "Home")
+    an    = match.get("awayTeam", {}).get("shortName") or match.get("awayTeam", {}).get("name", "Away")
+    stage = match.get("stage", "")
+
+    # Try ESPN preview article first
+    if espn_summary:
+        article_html = espn_summary.get("article", {}).get("story", "")
+        article_text = strip_html(article_html) if article_html else ""
+        if article_text:
+            return (
+                f"Here is a preview article for an upcoming 2026 FIFA World Cup match.\n\n"
+                f"{article_text[:2500]}\n\n"
+                f"Write a 2-sentence match preview capturing what makes this fixture compelling: "
+                f"the key tactical battle, what's at stake, or standout players to watch. "
+                f"Present tense, no preamble, no clichés."
+            )
+
+    # Build structured context
+    lines = [f"Match: {hn} vs {an}"]
+
+    if stage == "GROUP_STAGE":
+        grp_label = match.get("group", "").replace("GROUP_", "Group ")
+        md        = match.get("matchday", 1)
+        lines.append(f"Stage: {grp_label}, Matchday {md} of 3")
+        total_groups = [s for s in standings_list if s.get("type") == "TOTAL"]
+        grp = next((s for s in total_groups if s.get("group") == grp_label), None)
+        if grp:
+            for row in grp.get("table", []):
+                tid = row.get("team", {}).get("id")
+                if tid in (match.get("homeTeam", {}).get("id"), match.get("awayTeam", {}).get("id")):
+                    tname = row.get("team", {}).get("shortName") or row.get("team", {}).get("name", "")
+                    lines.append(
+                        f"  {tname}: {row.get('points',0)} pts, "
+                        f"{row.get('goalDifference',0):+d} GD, "
+                        f"{row.get('won',0)}W-{row.get('draw',0)}D-{row.get('lost',0)}L"
+                    )
+    else:
+        stage_name = STAGE_LABEL.get(stage, stage)
+        next_round = NEXT_ROUND.get(stage, "")
+        lines.append(f"Stage: {stage_name}")
+        if next_round:
+            lines.append(f"Winner advances to: {next_round}")
+
+    context = "\n".join(lines)
+    return (
+        f"Here is context for an upcoming 2026 FIFA World Cup match:\n\n"
+        f"{context}\n\n"
+        f"Write a 2-sentence match preview capturing what makes this fixture compelling. "
+        f"Draw on your knowledge of both teams' styles, key players, and what's at stake. "
+        f"Present tense, no preamble, no clichés."
+    )
+
+
+def process_previews(upcoming_matches, standings_list, espn_map):
+    PREVIEWS_DIR.mkdir(parents=True, exist_ok=True)
+    now       = datetime.now(timezone.utc)
+    generated = 0
+
+    for match in upcoming_matches:
+        mid  = match["id"]
+        path = PREVIEWS_DIR / f"{mid}.json"
+
+        if path.exists():
+            continue
+
+        # Only generate within the preview window
+        try:
+            kickoff = datetime.fromisoformat(match["utcDate"].replace("Z", "+00:00"))
+        except (KeyError, ValueError):
+            continue
+        hours_until = (kickoff - now).total_seconds() / 3600
+        if hours_until < 0 or hours_until > PREVIEW_WINDOW_H:
+            continue
+
+        # Try ESPN for a preview article
+        espn_summary = None
+        espn_id = espn_id_for(match, espn_map)
+        if espn_id:
+            try:
+                espn_summary = fetch_url(f"{ESPN_SUMMARY}?event={espn_id}")
+            except Exception:
+                pass
+
+        try:
+            prompt  = build_preview_prompt(match, standings_list, espn_summary)
+            preview = call_claude(prompt)
+            path.write_text(json.dumps({
+                "status":       "complete",
+                "match_id":     mid,
+                "preview":      preview,
+                "generated_at": now.isoformat(),
+            }, ensure_ascii=False))
+            print(f"  ✓ Preview ({mid}): {preview[:100]}…")
+            generated += 1
+        except Exception as e:
+            print(f"  Match {mid}: preview generation failed — {e}")
+
+    return generated
+
+
 # ── Summary orchestration ─────────────────────────────────────────────────────
 
 def process_summaries(finished_matches, espn_map):
@@ -342,16 +476,27 @@ def main():
     print(f"\n  matches:   {n_matches} total, {live_count} live")
     print(f"  standings: {n_groups} group entries")
 
-    # Generate AI recaps for finished matches
-    finished = [m for m in matches.get("matches", []) if m.get("status") in ("FINISHED", "AWARDED")]
-    if finished and ANTHROPIC_KEY:
-        print(f"\n  Processing recaps for {len(finished)} finished matches…")
+    if ANTHROPIC_KEY:
         espn_map  = get_espn_event_map()
-        generated = process_summaries(finished, espn_map)
-        if generated:
-            print(f"  ✓ {generated} new recap(s) generated")
-    elif finished and not ANTHROPIC_KEY:
-        print("\n  ANTHROPIC_API_KEY not set — skipping recap generation")
+        all_matches = matches.get("matches", [])
+
+        # Generate previews for upcoming matches within the preview window
+        upcoming = [m for m in all_matches if m.get("status") in ("SCHEDULED", "TIMED")]
+        if upcoming:
+            print(f"\n  Processing previews for {len(upcoming)} upcoming matches…")
+            generated = process_previews(upcoming, standings.get("standings", []), espn_map)
+            if generated:
+                print(f"  ✓ {generated} new preview(s) generated")
+
+        # Generate recaps for finished matches
+        finished = [m for m in all_matches if m.get("status") in ("FINISHED", "AWARDED")]
+        if finished:
+            print(f"\n  Processing recaps for {len(finished)} finished matches…")
+            generated = process_summaries(finished, espn_map)
+            if generated:
+                print(f"  ✓ {generated} new recap(s) generated")
+    else:
+        print("\n  ANTHROPIC_API_KEY not set — skipping preview/recap generation")
 
     print(f"\n✓  data/ written")
 
