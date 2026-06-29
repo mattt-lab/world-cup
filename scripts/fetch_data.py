@@ -152,7 +152,7 @@ def write(path, data):
 # ── ESPN helpers ──────────────────────────────────────────────────────────────
 
 def get_espn_event_map():
-    """Fetch ESPN scoreboard → dict mapping 'HTla:ATla' to ESPN event ID."""
+    """Fetch ESPN scoreboard → dict mapping 'HTla:ATla' to {id, state}."""
     try:
         data = fetch_url(ESPN_SCOREBOARD)
     except Exception as e:
@@ -167,14 +167,23 @@ def get_espn_event_map():
             ht = home.get("team", {}).get("abbreviation", "")
             at = away.get("team", {}).get("abbreviation", "")
             if ht and at:
-                result[f"{ht}:{at}"] = event.get("id", "")
+                state = event.get("status", {}).get("type", {}).get("state", "")
+                result[f"{ht}:{at}"] = {"id": event.get("id", ""), "state": state}
     return result
 
 
 def espn_id_for(match, espn_map):
-    ht = match.get("homeTeam", {}).get("tla", "")
-    at = match.get("awayTeam", {}).get("tla", "")
-    return espn_map.get(f"{ht}:{at}", "")
+    ht  = match.get("homeTeam", {}).get("tla", "")
+    at  = match.get("awayTeam", {}).get("tla", "")
+    val = espn_map.get(f"{ht}:{at}", {})
+    return val.get("id", "") if isinstance(val, dict) else val
+
+
+def is_espn_finished(match, espn_map):
+    ht  = match.get("homeTeam", {}).get("tla", "")
+    at  = match.get("awayTeam", {}).get("tla", "")
+    val = espn_map.get(f"{ht}:{at}", {})
+    return isinstance(val, dict) and val.get("state") == "post"
 
 
 # ── Claude recap generation ───────────────────────────────────────────────────
@@ -488,8 +497,9 @@ def main():
             if generated:
                 print(f"  ✓ {generated} new preview(s) generated")
 
-        # Generate recaps for finished matches
-        finished = [m for m in all_matches if m.get("status") in ("FINISHED", "AWARDED")]
+        # Generate recaps for finished matches — use ESPN state to catch FDO lag
+        finished = [m for m in all_matches
+                    if m.get("status") in ("FINISHED", "AWARDED") or is_espn_finished(m, espn_map)]
         if finished:
             print(f"\n  Processing recaps for {len(finished)} finished matches…")
             generated = process_summaries(finished, espn_map)
