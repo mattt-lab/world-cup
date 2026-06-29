@@ -145,13 +145,21 @@ const STAGES=[
 const STAGE_KEYS=new Set(STAGES.map(s=>s.key));
 const THIRD_KEYS=new Set(['THIRD_PLACE','THIRD_PLACE_MATCH']);
 
-// FDO match IDs in the correct bracket draw order.
-// R32: pairs (W1,W3),(W2,W5),(W4,W6),(W7,W8),(W9,W10),(W11,W12),(W13,W15),(W14,W16)
-// — each pair's winners meet in the corresponding R16 slot.
-const R32_BRACKET=[537417,537418, 537423,537424, 537415,537425, 537416,537422,
-                   537421,537426, 537419,537420, 537429,537427, 537428,537430];
-// R16 slot order: Houston, Philadelphia, New York, Mexico City, Seattle, Dallas, Atlanta, Vancouver
-const R16_BRACKET=[537376,537375, 537377,537378, 537380,537379, 537381,537382];
+// FDO match IDs in bracket draw order (derived from authoritative FIFA match numbers M73-M88).
+// R32 pairs: each adjacent pair's winners meet in the corresponding R16 slot.
+const R32_BRACKET=[
+    537417,537418, // M73+M75 → R16 Houston   (M90)
+    537415,537416, // M74+M77 → R16 Philadelphia (M89)
+    537419,537420, // M83+M84 → R16 Dallas    (M93)
+    537421,537422, // M81+M82 → R16 Seattle   (M94)
+    537423,537424, // M76+M78 → R16 New York  (M91)
+    537425,537426, // M79+M80 → R16 Mex City  (M92)
+    537427,537428, // M86+M88 → R16 Atlanta   (M95)
+    537429,537430, // M85+M87 → R16 Vancouver (M96)
+];
+// R16 slot order grouped by QF: [Houston,Philadelphia]→QF Boston, [Dallas,Seattle]→QF LA,
+// [New York,Mexico City]→QF Miami, [Atlanta,Vancouver]→QF Kansas City
+const R16_BRACKET=[537376,537375, 537379,537380, 537377,537378, 537381,537382];
 function bracketSort(ids){
     return(a,b)=>{
         const ai=ids.indexOf(a.id),bi=ids.indexOf(b.id);
