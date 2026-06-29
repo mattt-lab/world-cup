@@ -659,9 +659,10 @@ function matchCard(m, blurb, isNext=false){
     const city=cityStr?` · ${cityStr}`:'';
     const blurbHtml=blurb?`<div class="match-blurb">${blurb}</div>`:'';
     const grpAnchor=m.group?`#group-${m.group.replace('GROUP_','').toLowerCase()}`:'';
+    const href=m.stage==='GROUP_STAGE'?`wc-groups.html${grpAnchor}`:'wc-bracket.html';
     const cardCls=[isDone(m)?'finished-card':'',isNext?'next-up-card':''].filter(Boolean).join(' ');
     const upNextBadge=isNext?`<div class="up-next-badge">▶ Up next</div>`:'';
-    return`<a class="match-link" href="wc-groups.html${grpAnchor}">
+    return`<a class="match-link" href="${href}">
         <div class="match-card ${cardCls}">
             ${upNextBadge}
             <div class="match-row">
