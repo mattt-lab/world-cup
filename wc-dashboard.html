@@ -609,7 +609,8 @@ function liveHeroCard(m, standingsArr){
     const espn=espnFor(m);
     const h=espn?.homeScore??m.score?.fullTime?.home??0;
     const a=espn?.awayScore??m.score?.fullTime?.away??0;
-    const isHT=m.status==='PAUSED'||espn?.detail?.toLowerCase().includes('half time');
+    // Prefer ESPN detail over FDO status — FDO can stay PAUSED long into the second half
+    const isHT=espn ? espn.detail?.toLowerCase().includes('half time') : m.status==='PAUSED';
     let statusLabel='● Live';
     if(isHT){
         statusLabel='Half Time';
