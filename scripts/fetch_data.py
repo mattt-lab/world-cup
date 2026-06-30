@@ -186,6 +186,33 @@ def is_espn_finished(match, espn_map):
     return isinstance(val, dict) and val.get("state") == "post"
 
 
+def needs_recap(espn_map):
+    """Return True if ESPN reports any recently-finished match with no complete recap yet."""
+    try:
+        with open("data/matches.json", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return False
+    now = datetime.now(timezone.utc)
+    for m in data.get("matches", []):
+        if not is_espn_finished(m, espn_map):
+            continue
+        path = SUMMARIES_DIR / f"{m['id']}.json"
+        if path.exists():
+            try:
+                if json.loads(path.read_text(encoding="utf-8")).get("status") == "complete":
+                    continue
+            except Exception:
+                pass
+        try:
+            kickoff = datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00"))
+            if (now - kickoff).total_seconds() / 3600 < 6:
+                return True
+        except Exception:
+            pass
+    return False
+
+
 # ── Claude recap generation ───────────────────────────────────────────────────
 
 def call_claude(prompt):
@@ -462,9 +489,16 @@ def main():
         print("ERROR: FOOTBALL_DATA_API_KEY not set", file=sys.stderr)
         sys.exit(1)
 
+    # Check FDO window first (cheap — reads local file only).
+    # If FDO says quiet, consult ESPN: it may know a match finished that FDO hasn't caught up on.
+    espn_map = None
     if not in_match_window():
-        print("  Quiet period — no active or imminent matches. Skipping fetches.")
-        return
+        if ANTHROPIC_KEY:
+            espn_map = get_espn_event_map()
+        if not espn_map or not needs_recap(espn_map):
+            print("  Quiet period — no active or imminent matches. Skipping fetches.")
+            return
+        print("  FDO quiet but ESPN has finished matches needing recaps — continuing.")
 
     matches   = fetch("/competitions/WC/matches")
     standings = fetch("/competitions/WC/standings")
@@ -486,7 +520,8 @@ def main():
     print(f"  standings: {n_groups} group entries")
 
     if ANTHROPIC_KEY:
-        espn_map  = get_espn_event_map()
+        if espn_map is None:
+            espn_map = get_espn_event_map()
         all_matches = matches.get("matches", [])
 
         # Generate previews for upcoming matches within the preview window
