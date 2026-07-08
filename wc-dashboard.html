@@ -125,7 +125,7 @@ nav a.bk-live{animation:bk-pulse 2s ease-in-out infinite}
 </head>
 <body>
 <header>
-    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.6</span></div>
+    <div class="logo">⚽ <span class="logo-wordmark">World Cup </span><em>2026</em> <span class="logo-ver">v2.7</span></div>
     <nav>
         <a href="wc-dashboard.html" class="active">Today</a>
         <a href="wc-groups.html">Groups</a>
@@ -439,8 +439,10 @@ function heroCrest(team){
 }
 
 // ── Date / status helpers ─────────────────────────────────────────────────────
+function etDay(utc){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(utc))}
+function fmtDayET(utc){return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'long',month:'long',day:'numeric'}).format(new Date(utc))}
 function localDay(utc){const d=new Date(utc);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function todayDay(){return localDay(new Date().toISOString())}
+function todayDay(){return etDay(new Date())}
 function fmtDay(utc){return new Date(utc).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
 function fmtTime(utc){return new Date(utc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
 
@@ -714,9 +716,9 @@ function groupByDay(ms){
 }
 
 function renderMatches(matches,standingsArr){
-    const today=todayDay();
+    const todayET_=todayDay();
+    const tomorrowET_=etDay(new Date(Date.now()+864e5));
     const live=matches.filter(m=>isLive(m));
-    const todayMs=matches.filter(m=>localDay(m.utcDate)===today);
 
     if(live.length){
         document.getElementById('live-section').innerHTML=
@@ -727,14 +729,18 @@ function renderMatches(matches,standingsArr){
         document.getElementById('live-section').innerHTML='';
     }
 
-    const el=document.getElementById('today-section');
+    const todayMs=matches.filter(m=>etDay(m.utcDate)===todayET_);
+    const tomorrowMs=matches.filter(m=>etDay(m.utcDate)===tomorrowET_);
 
+    let html='';
+
+    // TODAY
+    html+=`<div class="section-label">Today · ${fmtDayET(new Date())}</div>`;
     if(todayMs.length){
         const upcoming=todayMs.filter(m=>!isLive(m)&&!isDone(m))
             .sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
         const finished=todayMs.filter(m=>isDone(m))
             .sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
-        let html=`<div class="section-label">${fmtDay(todayMs[0].utcDate)}</div>`;
         if(upcoming.length){
             html+=`<div class="subsec-label green">Coming up</div>`;
             const nextKickoff=upcoming[0].utcDate;
@@ -744,26 +750,21 @@ function renderMatches(matches,standingsArr){
             html+=`<div class="subsec-label" style="margin-top:${upcoming.length?'18px':'4px'}">Earlier today</div>`;
             html+=finished.map(m=>matchCard(m,computeCardBlurb(m,standingsArr))).join('');
         }
-        el.innerHTML=html;
-        return;
+    } else {
+        html+=`<div class="subsec-label" style="color:#555;margin-top:8px">No matches</div>`;
     }
 
-    const recent=matches.filter(m=>isDone(m)).sort((a,b)=>new Date(b.utcDate)-new Date(a.utcDate));
-    const upcoming=matches.filter(m=>SCHED_ST.has(effectiveStatus(m))).sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
-    let html='';
-    if(recent.length){
-        html+=`<div class="section-label">Recent Results</div>`;
-        for(const[,ms] of groupByDay(recent.slice(0,12)).slice(0,2)){
-            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(m=>matchCard(m,computeCardBlurb(m,standingsArr))).join('');
-        }
+    // TOMORROW
+    html+=`<div class="section-label" style="margin-top:32px">Tomorrow · ${fmtDayET(new Date(Date.now()+864e5))}</div>`;
+    if(tomorrowMs.length){
+        html+=tomorrowMs
+            .sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate))
+            .map(m=>matchCard(m,computeCardBlurb(m,standingsArr))).join('');
+    } else {
+        html+=`<div class="subsec-label" style="color:#555;margin-top:8px">No matches</div>`;
     }
-    if(upcoming.length){
-        html+=`<div class="section-label" style="margin-top:${recent.length?'28px':'0'}">Coming Up</div>`;
-        for(const[,ms] of groupByDay(upcoming.slice(0,12)).slice(0,2)){
-            html+=`<div class="day-header">${fmtDay(ms[0].utcDate)}</div>`+ms.map(m=>matchCard(m,computeCardBlurb(m,standingsArr))).join('');
-        }
-    }
-    el.innerHTML=html||'<div class="error-msg">No matches found.</div>';
+
+    document.getElementById('today-section').innerHTML=html;
 }
 
 // ── Auto-refresh ──────────────────────────────────────────────────────────────
