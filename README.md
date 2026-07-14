@@ -1,6 +1,6 @@
 # 2026 FIFA World Cup Dashboard
 
-A real-time, three-page World Cup dashboard hosted on GitHub Pages. No backend, no build step — just static HTML served from committed JSON files that a GitHub Actions workflow keeps fresh every five minutes.
+A real-time, four-page World Cup dashboard hosted on GitHub Pages. No backend, no build step — just static HTML served from committed JSON files that a GitHub Actions workflow keeps fresh every five minutes.
 
 **Live site:** https://mattt-lab.github.io/world-cup/
 
@@ -8,7 +8,7 @@ A real-time, three-page World Cup dashboard hosted on GitHub Pages. No backend, 
 
 ## Pages
 
-### Today (`wc-dashboard.html`)
+### Up Next (`wc-dashboard.html`)
 The main view. Shows what's happening right now and what's on today.
 
 - **Phase banner** — detects the current tournament stage (Group Stage, Round of 32, etc.) and matchday automatically from live match data. Shows a pulsing live count when games are in progress.
@@ -26,6 +26,13 @@ Full group stage standings for all 12 groups in a responsive grid.
 - Real team crest images from the API alongside TLA codes, W/D/L, goal difference, and points.
 - Points are highlighted green for qualifiers, amber for third place.
 
+### Bracket (`wc-bracket.html`)
+The 32-team knockout bracket — Round of 32 through the Final.
+
+- Reads live match state directly from ESPN's scoreboard API (Round of 32 onward), independent of the football-data.org feed the other pages use.
+- Each round (R32, R16, Quarterfinals, Semifinals, Final) renders as its own column, matches advance visually as results come in.
+- Placeholder names ("Group I 2nd Place", "Round of 32 3 Winner") are filtered/cleaned up so unresolved slots read cleanly rather than showing raw API strings.
+
 ### Schedule (`wc-schedule.html`)
 All 104 matches across the tournament, filterable by stage.
 
@@ -39,15 +46,33 @@ All 104 matches across the tournament, filterable by stage.
 
 ## Data pipeline
 
-Data comes from the [football-data.org](https://www.football-data.org/) v4 API. Because the free tier restricts cross-origin requests to `http://localhost`, the browser can't call the API directly from GitHub Pages. Instead, a GitHub Actions workflow fetches data server-side and commits the results as static JSON files.
+Data comes from the [football-data.org](https://www.football-data.org/) v4 API. Because the free tier restricts cross-origin requests to `http://localhost`, the browser can't call the API directly from GitHub Pages. Instead, a GitHub Actions workflow fetches data server-side and commits the results as static JSON files — and, in the same run, generates the AI previews/recaps described below.
 
 ```
-GitHub Actions (every 5 min during match hours)
+GitHub Actions (every 5 min; skips entirely if no match is live/imminent
+                and no recap is still pending, to save API quota)
     └─ scripts/fetch_data.py
-          ├─ GET /competitions/WC/matches   → data/matches.json
-          └─ GET /competitions/WC/standings → data/standings.json
+          ├─ GET football-data.org  → data/matches.json, data/standings.json
+          │
+          ├─ Previews — for each match kicking off within 36h with no
+          │  preview file yet: try an ESPN preview article first, else
+          │  build context from live group standings → Claude (Haiku)
+          │  writes 2 sentences, present tense → data/previews/<id>.json
+          │
+          └─ Recaps — for each finished match without a "complete" recap:
+                mark "pending" on first detection, then poll ESPN for its
+                match-report article for up to 1h; once found (or once
+                timed out and using bare result/goals/possession facts
+                instead) → Claude writes 2-3 sentences, past tense
+                → data/summaries/<id>.json
+
+Live scores themselves come from ESPN's scoreboard API directly in the
+browser (no key, CORS-open) — this pipeline only handles previews/recaps
+and the football-data.org matches/standings feed.
 
 GitHub Pages serves data/*.json same-origin → no CORS issues
+Dashboard fetches previews/summaries per-match and falls back to the
+template blurb (see Smart features below) if neither exists yet.
 ```
 
 The workflow runs every 5 minutes between noon and 3 AM UTC (covering all match windows) and hourly overnight. It only commits when data actually changes, so the git history stays clean.
@@ -58,7 +83,9 @@ The workflow runs every 5 minutes between noon and 3 AM UTC (covering all match 
 
 **Phase detection** — rather than hardcoding dates, the dashboard inspects match statuses: the current stage is whichever stage has the most recent `FINISHED` or `LIVE` matches. This means the banner automatically advances from Group Stage → Round of 32 → ... → Final as the tournament progresses.
 
-**Computed match blurbs** — no LLM required. Each blurb is generated from the live standings table using a set of conditional templates covering every meaningful matchday-2 and matchday-3 scenario (both teams won, one lost, both drew, elimination pressure, already qualified, etc.). The output reads like editorial copy.
+**AI previews and recaps, with a template fallback** — a GitHub Actions script (`scripts/fetch_data.py`) asks Claude to write a 2-sentence preview for every match starting within 36 hours, and a 2-3 sentence recap once a match finishes — using a real ESPN match report when one exists, or the actual goals/possession/result otherwise, so it's never guessing. The recap step waits up to an hour after full time for ESPN's own article to appear before falling back to bare match facts. Each match gets its own file (`data/previews/<id>.json`, `data/summaries/<id>.json`), so a mismatch or missing file just means that one card falls back to the deterministic, template-based blurb described below — never a blank card.
+
+**Computed match blurbs (fallback)** — for any match without an AI preview/recap yet (outside the 36h window, or Claude/ESPN unavailable), each blurb is generated client-side from the live standings table using a set of conditional templates covering every meaningful matchday-2 and matchday-3 scenario (both teams won, one lost, both drew, elimination pressure, already qualified, etc.).
 
 **Player spotlights** — a curated one-sentence description of the key player to watch for every nation in the tournament. Combined with the stakes text, each live hero card gives you a genuine reason to care about the match even if you've just tuned in.
 
@@ -75,8 +102,9 @@ The workflow runs every 5 minutes between noon and 3 AM UTC (covering all match 
 1. Fork or clone the repo.
 2. Sign up for a free API key at [football-data.org](https://www.football-data.org/).
 3. Add the key as a GitHub Actions secret named `FOOTBALL_DATA_API_KEY`.
-4. Enable GitHub Pages (Settings → Pages → Deploy from branch: `main`, root `/`).
-5. Trigger the `Update World Cup Data` workflow manually once to seed the JSON files.
+4. (Optional) Add an `ANTHROPIC_API_KEY` secret if you want the AI-written previews/recaps — without it, the script still runs and every match just uses the computed template blurb instead.
+5. Enable GitHub Pages (Settings → Pages → Deploy from branch: `main`, root `/`).
+6. Trigger the `Update World Cup Data` workflow manually once to seed the JSON files.
 
 The site will be live at `https://<your-username>.github.io/world-cup/`.
 
@@ -89,5 +117,6 @@ The site will be live at `https://<your-username>.github.io/world-cup/`.
 | Hosting | GitHub Pages (static) |
 | Data pipeline | GitHub Actions + Python (`urllib`, no dependencies) |
 | Frontend | Vanilla HTML/CSS/JS — no framework, no bundler |
-| API | football-data.org v4 (free tier) |
+| API | football-data.org v4 (free tier), ESPN scoreboard/summary (unauthenticated) |
+| AI | Anthropic Claude Haiku — match previews + recaps |
 | Caching | `localStorage` with TTL |
