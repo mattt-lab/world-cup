@@ -1,112 +1,100 @@
 # 2026 FIFA World Cup Dashboard
 
-A real-time, four-page World Cup dashboard hosted on GitHub Pages. No backend, no build step — just static HTML served from committed JSON files that a GitHub Actions workflow keeps fresh every five minutes.
+A real-time, four-page World Cup dashboard hosted on GitHub Pages. No backend, no build step — just static HTML served from committed JSON files that a GitHub Actions workflow kept fresh every five minutes during the tournament.
 
 **Live site:** https://mattt-lab.github.io/world-cup/
+
+> **STATUS: FROZEN — 2026 tournament complete.**
+> The site displays the final tournament state and remains fully browsable. The data pipeline cron is disabled. See [Reactivating for 2030](#reactivating-for-2030) to bring it back to life.
 
 ---
 
 ## Pages
 
-### Up Next (`wc-dashboard.html`)
-The main view. Shows what's happening right now and what's on today.
+### Up Next (`wc-dashboard.html`) — v2.8
+The main view. Always shows two sections — **Today** and **Tomorrow** — anchored to US Eastern Time so FIFA's match-day groupings stay intact regardless of the viewer's timezone. Kickoff times display in the viewer's local timezone.
 
-- **Phase banner** — detects the current tournament stage (Group Stage, Round of 32, etc.) and matchday automatically from live match data. Shows a pulsing live count when games are in progress.
-- **Live match hero card** — any in-progress match gets a full-width hero treatment: large 52px team crests, bold 44px score, green glow border, and a rich 2–4 sentence blurb that covers:
-  - *What's at stake* — computed from live standings (who needs a win, who's already through, must-not-lose situations)
-  - *Who to watch* — a hand-written player spotlight sentence for every nation in the tournament (48+ teams)
-- **Today's matches** — compact cards for each game on the day, each with a 2-sentence "what this match means" blurb (computed from standings) and the host city, all inside the card bounding box. Clicking any card jumps directly to that team's group on the Groups page.
-- **Stale-LIVE guard** — if the API lags in marking a finished match, any match that started more than 130 minutes ago is treated as finished rather than shown as live.
-- **Auto-refresh** — when a live match is detected, the page quietly re-fetches data every 60 seconds so scores stay current.
+- **Live match hero card** — any in-progress match gets a full-width hero treatment: large team crests, bold score, green glow border
+- **AI blurbs** — each match card shows a Claude-written preview (pre-match) or recap (post-match); falls back to a computed standings-based blurb if neither exists
+- **Live auto-refresh** — ESPN scoreboard API polled every 30 seconds during active match windows; self-limiting when no matches are live
+- **KO navigation** — match cards on this page link to the Bracket for knockout matches, and to Groups for group stage matches
 
-### Groups (`wc-groups.html`)
+### Groups (`wc-groups.html`) — v2.8
 Full group stage standings for all 12 groups in a responsive grid.
 
-- Qualification colour coding: green bar for automatic qualifiers (top 2), amber for possible third-place qualifiers, dimmed for eliminated teams.
-- Real team crest images from the API alongside TLA codes, W/D/L, goal difference, and points.
-- Points are highlighted green for qualifiers, amber for third place.
+- Qualification colour coding: green for automatic qualifiers (top 2), amber for possible third-place qualifiers, dimmed for eliminated teams
+- Real team crest images, W/D/L, goal difference, and points
 
-### Bracket (`wc-bracket.html`)
-The 32-team knockout bracket — Round of 32 through the Final.
+### Bracket (`wc-bracket.html`) — v2.8
+The 48-team knockout bracket — Round of 32 through the Final.
 
-- Reads live match state directly from ESPN's scoreboard API (Round of 32 onward), independent of the football-data.org feed the other pages use.
-- Each round (R32, R16, Quarterfinals, Semifinals, Final) renders as its own column, matches advance visually as results come in.
-- Placeholder names ("Group I 2nd Place", "Round of 32 3 Winner") are filtered/cleaned up so unresolved slots read cleanly rather than showing raw API strings.
+- Match pairs ordered by official FIFA match numbers (M73–M104), verified against the published schedule
+- Each round renders as its own column; results fill in as matches complete
 
-### Schedule (`wc-schedule.html`)
+### Schedule (`wc-schedule.html`) — v2.8
 All 104 matches across the tournament, filterable by stage.
 
-- **Stage filter tabs** — All, Group Stage, Round of 32, Round of 16, Quarterfinals, Semifinals, 3rd Place Playoff, Final. Tabs wrap cleanly to a second row rather than overflowing.
-- **Defaults to the current stage** — automatically opens on Group Stage during the group phase, Round of 32 when the knockouts begin, and so on.
-- Group stage matches are organised by date. Knockout rounds are organised by round then date.
-- TBD slots for undetermined knockout teams display cleanly as "TBD" rather than crashing or showing "null".
-- Win/loss dimming — in finished matches, the losing team's name is visually muted.
+- Stage filter tabs: All, Group Stage, R32, R16, QF, SF, 3rd Place Playoff, Final
+- Defaults to the current/most-recent active stage automatically
 
 ---
 
 ## Data pipeline
 
-Data comes from the [football-data.org](https://www.football-data.org/) v4 API. Because the free tier restricts cross-origin requests to `http://localhost`, the browser can't call the API directly from GitHub Pages. Instead, a GitHub Actions workflow fetches data server-side and commits the results as static JSON files — and, in the same run, generates the AI previews/recaps described below.
+Data comes from [football-data.org](https://www.football-data.org/) v4 API and [ESPN's CORS-open scoreboard API](https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard).
 
 ```
-GitHub Actions (every 5 min; skips entirely if no match is live/imminent
-                and no recap is still pending, to save API quota)
+GitHub Actions cron (every 5 min during tournament; DISABLED post-tournament)
     └─ scripts/fetch_data.py
           ├─ GET football-data.org  → data/matches.json, data/standings.json
           │
-          ├─ Previews — for each match kicking off within 36h with no
-          │  preview file yet: try an ESPN preview article first, else
-          │  build context from live group standings → Claude (Haiku)
-          │  writes 2 sentences, present tense → data/previews/<id>.json
+          ├─ Previews — for each match kicking off within 36h with no preview
+          │  file yet: try an ESPN article first, else build context from live
+          │  standings → Claude Haiku writes 2 sentences → data/previews/<id>.json
           │
-          └─ Recaps — for each finished match without a "complete" recap:
-                mark "pending" on first detection, then poll ESPN for its
-                match-report article for up to 1h; once found (or once
-                timed out and using bare result/goals/possession facts
-                instead) → Claude writes 2-3 sentences, past tense
+          └─ Recaps — for each finished match without a complete recap:
+                mark "pending" on first detection, poll ESPN for match article
+                for up to 1h, then → Claude writes 2-3 sentences past tense
                 → data/summaries/<id>.json
 
-Live scores themselves come from ESPN's scoreboard API directly in the
-browser (no key, CORS-open) — this pipeline only handles previews/recaps
-and the football-data.org matches/standings feed.
-
-GitHub Pages serves data/*.json same-origin → no CORS issues
-Dashboard fetches previews/summaries per-match and falls back to the
-template blurb (see Smart features below) if neither exists yet.
+Live scores fetched client-side from ESPN (CORS-open, no key) during match
+windows only. FDO is used for schedule/standings backbone; ESPN is authoritative
+for live status (FDO lags 30–60 min on FINISHED, stays PAUSED into the 2nd half).
 ```
 
-The workflow runs every 5 minutes between noon and 3 AM UTC (covering all match windows) and hourly overnight. It only commits when data actually changes, so the git history stays clean.
+### Static files committed to the repo
+
+| File | Contents |
+|---|---|
+| `data/matches.json` | All 104 fixtures — final scores, statuses |
+| `data/standings.json` | Final group A–L tables |
+| `data/summaries/<id>.json` | Claude post-match recap (one per finished match) |
+| `data/previews/<id>.json` | Claude pre-match preview (generated within 36h of kickoff) |
 
 ---
 
 ## Smart features
 
-**Phase detection** — rather than hardcoding dates, the dashboard inspects match statuses: the current stage is whichever stage has the most recent `FINISHED` or `LIVE` matches. This means the banner automatically advances from Group Stage → Round of 32 → ... → Final as the tournament progresses.
+**ET-anchored day sections** — Today/Tomorrow on the Up Next page are defined by US Eastern Time, not the viewer's local clock, so all matches on a given FIFA match day always appear together regardless of timezone. Kickoff times display in local time.
 
-**AI previews and recaps, with a template fallback** — a GitHub Actions script (`scripts/fetch_data.py`) asks Claude to write a 2-sentence preview for every match starting within 36 hours, and a 2-3 sentence recap once a match finishes — using a real ESPN match report when one exists, or the actual goals/possession/result otherwise, so it's never guessing. The recap step waits up to an hour after full time for ESPN's own article to appear before falling back to bare match facts. Each match gets its own file (`data/previews/<id>.json`, `data/summaries/<id>.json`), so a mismatch or missing file just means that one card falls back to the deterministic, template-based blurb described below — never a blank card.
+**ESPN as live-status authority** — three specific FDO reliability issues are compensated for:
+- FDO PAUSED status persists into the 2nd half → halftime detection reads ESPN's detail string instead
+- FDO FINISHED can lag 30–60 min → ESPN `post` event state used to identify finished matches
+- FDO quiet period check → overridden when ESPN shows a recently-finished match still needing a recap
 
-**Computed match blurbs (fallback)** — for any match without an AI preview/recap yet (outside the 36h window, or Claude/ESPN unavailable), each blurb is generated client-side from the live standings table using a set of conditional templates covering every meaningful matchday-2 and matchday-3 scenario (both teams won, one lost, both drew, elimination pressure, already qualified, etc.).
+**AI previews and recaps** — Claude Haiku writes a 2-sentence preview per match (within 36h of kickoff) and a 2–3 sentence recap once the match finishes, using real ESPN match reports when available. Each is stored as a per-match JSON file; a missing file falls back gracefully to the computed template blurb — never a blank card.
 
-**Player spotlights** — a curated one-sentence description of the key player to watch for every nation in the tournament. Combined with the stakes text, each live hero card gives you a genuine reason to care about the match even if you've just tuned in.
+**Computed match blurbs (fallback)** — client-side standings logic covers every meaningful group-stage scenario (both teams won, one lost, both drew, elimination pressure, already qualified, etc.).
 
-**Host city** — a hardcoded match ID → city lookup table covers all 104 matches (football-data.org free tier omits venue data). Each card shows the city alongside the group/matchday metadata.
+**Phase detection** — inspects match statuses to determine current stage automatically; no hardcoded dates.
 
-**localStorage caching** — match and standings data is cached for 120 seconds so navigating between pages doesn't trigger redundant fetches.
+**Host city lookup** — hardcoded match ID → city table covers all 104 matches (FDO free tier omits venue data).
 
-**Team crests** — all team logos come directly from the football-data.org CDN (`crests.football-data.org`). Flag emoji were avoided because Windows renders most national flag emoji as two-letter ISO codes rather than actual flags.
+**Player spotlights** — curated one-sentence "who to watch" for every nation in the tournament (48 teams).
 
----
+**PWA-ready** — `site.webmanifest`, `apple-touch-icon.png` (500×500), `icon-192.png`, `icon-512.png`. Installs cleanly as a home-screen app on iOS and Android. OG/Twitter cards wired up for link previews.
 
-## Setup
-
-1. Fork or clone the repo.
-2. Sign up for a free API key at [football-data.org](https://www.football-data.org/).
-3. Add the key as a GitHub Actions secret named `FOOTBALL_DATA_API_KEY`.
-4. (Optional) Add an `ANTHROPIC_API_KEY` secret if you want the AI-written previews/recaps — without it, the script still runs and every match just uses the computed template blurb instead.
-5. Enable GitHub Pages (Settings → Pages → Deploy from branch: `main`, root `/`).
-6. Trigger the `Update World Cup Data` workflow manually once to seed the JSON files.
-
-The site will be live at `https://<your-username>.github.io/world-cup/`.
+**Google Analytics** — property `G-9K08FK3SWH` on all four pages.
 
 ---
 
@@ -114,9 +102,76 @@ The site will be live at `https://<your-username>.github.io/world-cup/`.
 
 | Layer | Choice |
 |---|---|
-| Hosting | GitHub Pages (static) |
-| Data pipeline | GitHub Actions + Python (`urllib`, no dependencies) |
+| Hosting | GitHub Pages (static, zero cost) |
+| Data pipeline | GitHub Actions + Python (`urllib`, stdlib only — no pip installs) |
 | Frontend | Vanilla HTML/CSS/JS — no framework, no bundler |
-| API | football-data.org v4 (free tier), ESPN scoreboard/summary (unauthenticated) |
-| AI | Anthropic Claude Haiku — match previews + recaps |
+| Match data | football-data.org v4 free tier |
+| Live scores | ESPN scoreboard/summary API (unauthenticated, CORS-open) |
+| AI | Anthropic Claude Haiku (`claude-haiku-4-5-20251001`) |
 | Caching | `localStorage` with TTL |
+| Analytics | Google Analytics 4 (G-9K08FK3SWH) |
+
+---
+
+## Setup (for a future tournament)
+
+1. Fork or clone the repo.
+2. Sign up for a free API key at [football-data.org](https://www.football-data.org/).
+3. Add the key as a GitHub Actions secret: `FOOTBALL_DATA_API_KEY`.
+4. (Optional) Add `ANTHROPIC_API_KEY` for AI previews/recaps.
+5. Enable GitHub Pages: Settings → Pages → Deploy from branch `main`, root `/`.
+6. Follow the reactivation steps below, then trigger the workflow manually once to seed the JSON files.
+
+---
+
+## Reactivating for 2030
+
+The following changes were made on **2026-07-20** to freeze the project. Reverse them when setting up for the next tournament.
+
+### 1. Re-enable the cron (`.github/workflows/update-data.yml`)
+
+```yaml
+# Change this:
+on:
+  # FROZEN 2026-07-20: cron disabled — tournament complete.
+  # To reactivate for 2030, uncomment the schedule block below.
+  # schedule:
+  #   - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+# Back to this:
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # Every 5 min all day; script exits early outside match windows
+  workflow_dispatch:
+```
+
+### 2. Update the competition ID in `scripts/fetch_data.py`
+
+Check football-data.org for the 2030 World Cup competition ID and update the `BASE` URL or competition path accordingly. The 2026 tournament used competition code `WC` with the 2026 season.
+
+### 3. Update bracket match IDs (`wc-bracket.html`)
+
+The `R32_BRACKET` and `R16_BRACKET` arrays contain hardcoded football-data.org match IDs specific to the 2026 tournament (IDs in the 537xxx range). These must be replaced with 2030 match IDs once the schedule is published. The ordering follows official FIFA match numbers M73–M104.
+
+### 4. Update player spotlights and city lookup
+
+`wc-dashboard.html` contains:
+- A hardcoded `PLAYER_SPOTLIGHTS` object (one entry per nation)
+- A hardcoded `CITY_MAP` / match ID → city lookup for all 104 matches
+
+Both need to be rebuilt for the 2030 tournament's participating nations and host cities.
+
+### 5. Clear stale data files
+
+Delete or archive the 2026 data before seeding fresh:
+```
+data/matches.json
+data/standings.json
+data/summaries/   (all files)
+data/previews/    (all files)
+```
+
+### 6. Update version numbers and GA property (optional)
+
+All four HTML pages show a version badge (`v2.8`). The GA property `G-9K08FK3SWH` is specific to this deployment — create a new GA4 property for the 2030 app if you want separate analytics.

@@ -1,8 +1,10 @@
 name: Update World Cup Data
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'  # Every 5 min all day; script exits early outside match windows
+  # FROZEN 2026-07-20: cron disabled — tournament complete.
+  # To reactivate for 2030, uncomment the schedule block below.
+  # schedule:
+  #   - cron: '*/5 * * * *'  # Every 5 min all day; script exits early outside match windows
   workflow_dispatch:
 
 permissions:
